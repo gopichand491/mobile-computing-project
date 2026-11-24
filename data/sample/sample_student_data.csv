@@ -1,0 +1,6 @@
+name,email,education_level,degree,department,year_of_study,interests,technical_skills,soft_skills
+Rahul Sharma,rahul@example.com,B.Tech (Pursuing),B.Tech Computer Science,Computer Science & Engineering,3rd Year,"Data Science, Machine Learning","Python:4,SQL:3,Machine Learning:2,Git:3,JavaScript:2","Communication:4,Problem Solving:4,Teamwork:3"
+Priya Patel,priya@example.com,B.Tech (Pursuing),B.Tech IT,Information Technology,4th Year,"Web Development, Full Stack","JavaScript:4,React:4,HTML:5,CSS:4,Node.js:3,SQL:3","Communication:5,Teamwork:4,Leadership:3"
+Arjun Singh,arjun@example.com,B.Tech (Pursuing),B.Tech ECE,Electronics & Communication,3rd Year,"IoT, Embedded Systems","C:3,C++:4,Embedded Systems:3,Electronics:4,Python:2","Problem Solving:4,Communication:3,Teamwork:3"
+Sneha Reddy,sneha@example.com,B.Tech (Pursuing),B.Tech Data Science,Data Science,4th Year,"Data Science, Analytics","Python:5,R:3,Statistics:4,Machine Learning:4,SQL:4,Pandas:4","Communication:4,Problem Solving:5,Teamwork:4,Leadership:3"
+Vikram Nair,vikram@example.com,B.Tech (Pursuing),B.Tech CSE,Computer Science & Engineering,2nd Year,"Cybersecurity, Networking","Linux:3,Python:3,Networking:4,SQL:2","Problem Solving:4,Communication:3,Teamwork:4"
