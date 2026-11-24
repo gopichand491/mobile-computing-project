@@ -293,10 +293,9 @@ def show_ai_assistant_dialog():
     with c_f1:
         if st.button("🗑️ Clear Chat", key="dlg_clear_btn", use_container_width=True):
             st.session_state.chat_messages = []
-            st.rerun()
+            st.success("Chat history cleared!")
     with c_f2:
-        if st.button("↗️ Full-Screen Assistant", key="dlg_fullscreen_btn", use_container_width=True):
-            st.switch_page("pages/13_AI_Career_Assistant.py")
+        st.page_link("pages/13_AI_Career_Assistant.py", label="↗️ Full-Screen Assistant", use_container_width=True)
 
 
 def render_floating_ai_assistant():
@@ -321,16 +320,10 @@ def render_floating_ai_assistant():
 
 def inject_premium_ui(page_id: str = "global"):
     """
-    Injects full design system, particles, sound effects, and floating AI assistant.
+    Injects full design system and floating AI assistant trigger.
+    Safe and resilient across all ASGI servers and Streamlit Community Cloud.
     """
     st.session_state["_page_id"] = page_id
-
-    # Inject Particles & Sounds
-    st.components.v1.html(
-        PARTICLES_HTML + SOUND_ENGINE_HTML + SOUND_TOGGLE_HTML,
-        height=0,
-        scrolling=False,
-    )
 
     # Render floating AI button
     render_floating_ai_assistant()

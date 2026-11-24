@@ -12,7 +12,7 @@ if ROOT not in sys.path:
 
 css_path = os.path.join(ROOT, "assets", "styles", "style.css")
 if os.path.exists(css_path):
-    with open(css_path) as f:
+    with open(css_path, "r", encoding="utf-8", errors="replace") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 from assets.premium_ui import inject_premium_ui, premium_header, neon_divider, glass_card

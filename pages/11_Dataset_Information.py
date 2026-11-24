@@ -16,7 +16,7 @@ setup_database()
 
 css_path = os.path.join(ROOT, "assets", "styles", "style.css")
 if os.path.exists(css_path):
-    with open(css_path) as f:
+    with open(css_path, "r", encoding="utf-8", errors="replace") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 from assets.premium_ui import inject_premium_ui, premium_header, neon_divider, glass_card
@@ -125,7 +125,7 @@ Upload a CSV with columns: **career_title**, **skills_list**, **description** (o
 uploaded = st.file_uploader("Upload CSV", type=["csv"])
 if uploaded:
     try:
-        custom_df = pd.read_csv(uploaded)
+        custom_df = pd.read_csv(uploaded, encoding="utf-8")
         required_cols = {"career_title", "skills_list"}
         if not required_cols.issubset(custom_df.columns):
             st.error(f"CSV must contain columns: {required_cols}. Found: {list(custom_df.columns)}")
@@ -141,7 +141,7 @@ if uploaded:
             )
 
             processed_path = os.path.join(ROOT, "data", "processed", "cleaned_career_skills.csv")
-            custom_df.to_csv(processed_path, index=False)
+            custom_df.to_csv(processed_path, index=False, encoding="utf-8")
 
             import ml.recommendation_model as rm
             rm._recommender = None

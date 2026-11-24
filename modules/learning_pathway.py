@@ -274,7 +274,7 @@ def _get_career_required_skills(career_title: str) -> List[str]:
     csv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "processed", "cleaned_career_skills.csv")
     if os.path.exists(csv_path):
         try:
-            df = pd.read_csv(csv_path)
+            df = pd.read_csv(csv_path, encoding="utf-8")
             match = df[df["career_title"].str.strip().str.lower() == career_title.strip().lower()]
             if not match.empty:
                 raw = str(match.iloc[0]["skills_list"])

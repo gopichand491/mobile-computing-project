@@ -224,7 +224,7 @@ def load_or_create_processed_data() -> tuple[pd.DataFrame, str]:
     """
     if os.path.exists(PROCESSED_FILE):
         try:
-            df = pd.read_csv(PROCESSED_FILE)
+            df = pd.read_csv(PROCESSED_FILE, encoding="utf-8")
             if len(df) > 0:
                 return df, "processed"
         except Exception as e:
@@ -232,7 +232,7 @@ def load_or_create_processed_data() -> tuple[pd.DataFrame, str]:
 
     # Generate from sample
     df = get_sample_dataframe()
-    df.to_csv(PROCESSED_FILE, index=False)
+    df.to_csv(PROCESSED_FILE, index=False, encoding="utf-8")
     return df, "sample"
 
 
@@ -266,5 +266,5 @@ def build_processed_dataset_from_onet(skills_df: pd.DataFrame, occupations_df: p
     )
     grouped["category"] = "O*NET Occupation"
 
-    grouped.to_csv(PROCESSED_FILE, index=False)
+    grouped.to_csv(PROCESSED_FILE, index=False, encoding="utf-8")
     return grouped
