@@ -1,7 +1,6 @@
 """
 Page 10 – Career Report Generation & Download
-Generates a comprehensive, downloadable PDF Career Report using the student's live database records.
-Guarantees full dossier data even on direct navigation.
+Generates a comprehensive, downloadable PDF Career Report using live database records.
 """
 
 import streamlit as st
@@ -19,6 +18,9 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+from assets.premium_ui import inject_premium_ui, premium_header, neon_divider, glass_card
+inject_premium_ui("report")
+
 from modules.student_registration import get_student_by_id, get_student_skills
 from modules.skill_assessment import get_assessment
 from modules.learning_pathway import get_pathway, get_learning_path, save_pathway
@@ -26,9 +28,9 @@ from modules.progress_tracking import get_progress
 from modules.report_generator import generate_career_report_pdf
 from ml.recommendation_model import get_recommender
 
-st.markdown("# 📄 Comprehensive Career Report")
-st.markdown("Generate and download your official academic career guidance and skill development report.")
-st.markdown("---")
+premium_header("Comprehensive Career Report",
+               "Generate and download your official academic career guidance and skill development report.", "📄")
+neon_divider()
 
 if not st.session_state.get("student_id"):
     st.warning("⚠️ Please register or log in first (Registration page).")
@@ -43,7 +45,6 @@ if not student:
 skills = get_student_skills(student_id)
 assessment = get_assessment(student_id)
 
-# Dynamically retrieve or generate recommendations if not in session state
 recs = st.session_state.get("recommendations", [])
 if not recs and skills:
     try:
@@ -57,36 +58,30 @@ if not recs and skills:
     except Exception:
         recs = []
 
-# Selected target career
 selected_career = st.session_state.get("selected_career")
 if not selected_career:
     selected_career = recs[0]["career_title"] if recs else "Data Analyst"
     st.session_state["selected_career"] = selected_career
 
-# Target career missing skills
 target_rec = next((r for r in recs if r["career_title"].lower() == selected_career.lower()), None)
 missing_for_target = target_rec.get("missing_skills", []) if target_rec else []
 
-# Retrieve or generate learning pathway
 pathway = get_pathway(student_id, selected_career)
 if not pathway:
     pathway = get_learning_path(selected_career, missing_for_target)
     save_pathway(student_id, selected_career, pathway)
 
-# Real progress from SQLite
 progress = get_progress(student_id, selected_career)
 
-# ── Report Preview Card ────────────────────────────────────────────────────────
-st.markdown(f"""
-<div style="background:linear-gradient(135deg,#0D47A1,#1976D2); border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
-    <h2 style="color:white; margin:0;">📋 SkillMatch Official Career Guidance Dossier</h2>
-    <p style="color:#BBDEFB; margin:0.4rem 0 0 0;">
-        Prepared for <b>{student['name']}</b> ({student.get('education_level', 'B.Tech')} - {student.get('department', 'Engineering')})
+# ── Preview Card ──────────────────────────────────────────────────
+glass_card(f"""
+    <h2 style="color:white !important; margin:0; font-size:1.4rem;">📋 SkillMatch Official Career Guidance Dossier</h2>
+    <p style="color:#B0C4DE !important; margin:0.4rem 0 0 0; font-size:0.92rem;">
+        Prepared for <b style="color:#00F5D4;">{student['name']}</b> ({student.get('education_level', 'B.Tech')} - {student.get('department', 'Engineering')})
     </p>
-</div>
-""", unsafe_allow_html=True)
+""")
 
-# ── Metrics Summary ────────────────────────────────────────────────────────────
+# ── Metrics Summary ───────────────────────────────────────────────
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric("👤 Student ID", f"#{student['id']}")
@@ -101,16 +96,12 @@ with col4:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Generate PDF ──────────────────────────────────────────────────────────────
+# ── Generate PDF ──────────────────────────────────────────────────
 with st.spinner("Compiling official PDF dossier from database..."):
     pdf_bytes = generate_career_report_pdf(
-        student=student,
-        skills=skills,
-        assessment=assessment,
-        recommendations=recs,
-        selected_career=selected_career,
-        pathway=pathway,
-        progress=progress,
+        student=student, skills=skills, assessment=assessment,
+        recommendations=recs, selected_career=selected_career,
+        pathway=pathway, progress=progress,
     )
 
 st.success("✅ Your personalized Career Report PDF is generated and ready to download!")
@@ -128,9 +119,9 @@ with c_down1:
 with c_down2:
     st.caption("Includes: Personal profile, skill assessment scores, ML career recommendations, skill gap analysis, and tailored 3-tier learning roadmap.")
 
-st.markdown("---")
+neon_divider()
 
-# ── Live Report Contents Inspection ───────────────────────────────────────────
+# ── Live Contents Inspection ──────────────────────────────────────
 st.markdown("### 🔍 Live Report Content Summary")
 
 tab_profile, tab_recs, tab_pathway = st.tabs(["👤 Profile & Skills", "🎯 Recommendations & Gaps", "🗺️ Roadmap & Status"])

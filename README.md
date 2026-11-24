@@ -37,6 +37,7 @@
 6. **3-Tier Personalized Learning Pathway**: Curate structured roadmaps divided into Beginner, Intermediate, and Advanced tiers with verified learning resources.
 7. **Persistent Progress Tracking**: Allow students to check off topics with real-time SQLite persistence across application restarts.
 8. **Downloadable Career Report**: Export an official academic career dossier in PDF format using ReportLab.
+9. **Smart AI Career Assistant Chatbot**: 24/7 interactive AI career counselor powered by real Google Gemini / OpenAI APIs with live student profile context injection.
 
 ---
 
@@ -172,11 +173,11 @@ SkillMatch/
 
 ---
 
-## 7. Application Pages (12 Pages)
+## 7. Application Pages (13 Pages)
 
-1. **🏠 Home Dashboard (`app.py`)**: Real-time academic metrics for logged-in students (total assessments, top career match, pathway completion %) and 1-click Demo Account loader.
+1. **🏠 Home Dashboard (`app.py`)**: Real-time academic metrics for logged-in students, guided workflow pipeline, and 1-click Demo Account loader.
 2. **📝 Student Registration (`pages/2_Registration.py`)**: Input validation, new account creation, email login, and instant demo account initialization.
-3. **📊 Skill Assessment (`pages/3_Skill_Assessment.py`)**: 12 interactive multiple-choice questions across Python, Java, SQL, ML, Data Structures, Git, and Soft Skills with instant score calculation and database synchronization.
+3. **📊 Skill Assessment (`pages/3_Skill_Assessment.py`)**: 12 interactive multiple-choice questions across Python, Java, SQL, ML, Git, and Soft Skills with instant score calculation and database synchronization.
 4. **👤 Learner Profile (`pages/4_Learner_Profile.py`)**: Interactive Plotly radar chart, horizontal competency bars, and proficiency distribution pie chart.
 5. **🎯 Career Recommendations (`pages/5_Career_Recommendations.py`)**: Top 5 careers ranked by match percentage with domain filters, competency coverage bars, and recommendation explanations.
 6. **📉 Skill Gap Analysis (`pages/6_Skill_Gap_Analysis.py`)**: 3-tier classification: Competent skills (>=3), Low-Proficiency skills (<3), and Missing Gaps with cross-career priority frequency ranking.
@@ -186,6 +187,7 @@ SkillMatch/
 10. **📄 Career Report (`pages/10_Career_Report.py`)**: Official downloadable PDF report generated in real-time from SQLite records using ReportLab.
 11. **🗄️ Dataset Information (`pages/11_Dataset_Information.py`)**: Overview of O*NET tables, skills explorer, and custom CSV upload feature.
 12. **ℹ️ About Project (`pages/12_About_Project.py`)**: System architecture, mathematical ML explanations, and complete technology stack.
+13. **🤖 AI Career Assistant (`pages/13_AI_Career_Assistant.py`)**: Intelligent, real-time AI guidance counselor with live student profile context, typewriter streaming animations, question chips, and floating accessibility on every page.
 
 ---
 
@@ -275,8 +277,9 @@ python -m pytest tests/ -v
 ```
 
 ### Test Results Summary:
+- **`tests/test_ai_chatbot.py`**: 7 tests passed (API credentials lookup, session override, student context compilation, prompt engineering, streaming generator, missing key exception)
 - **`tests/test_database.py`**: 6 tests passed (validation, creation, retrieval, case-insensitive login, skill upsert, duplicate email handling)
 - **`tests/test_preprocessing.py`**: 11 tests passed (O*NET schema, column completeness, lowercase normalization, feature encoding)
 - **`tests/test_recommendation.py`**: 9 tests passed (cosine similarity ranking, category filtering, empty skill handling, diversity evaluation)
 - **`tests/test_workflow_and_report.py`**: 7 tests passed (MCQ quiz grading, 3-tier roadmap generation, SQLite progress tracking, ReportLab PDF generation, dynamic roadmap generation for any O*NET career, persistence across reconnect, XML character escaping)
-- **Total: 33 passed in ~7 seconds (100% pass rate)**.
+- **Total: 40 passed in ~5 seconds (100% pass rate)**.

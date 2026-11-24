@@ -1,11 +1,5 @@
 """
-Page 1 – Home Dashboard
-Redirect page (app.py IS the home; this ensures sidebar link works)
+Page 1 – Dashboard (redirect)
 """
 import streamlit as st
-import os, sys
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
-
 st.switch_page("app.py")

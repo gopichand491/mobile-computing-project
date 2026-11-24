@@ -1,7 +1,6 @@
 """
 Page 4 – Learner Profile
-Displays comprehensive student profile, registered skills, assessment results,
-and interactive Plotly analytics (radar, bar, and competency distribution charts).
+Displays comprehensive student profile with interactive Plotly analytics.
 """
 
 import streamlit as st
@@ -20,13 +19,16 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+from assets.premium_ui import inject_premium_ui, premium_header, neon_divider, glass_card
+inject_premium_ui("profile")
+
 from modules.student_registration import get_student_by_id, get_student_skills
 from modules.skill_assessment import get_assessment, get_proficiency_label
 from modules.learner_profile import build_profile
 
-st.markdown("# 👤 Comprehensive Learner Profile")
-st.markdown("Your academic competencies, assessed skill levels, and learning readiness overview.")
-st.markdown("---")
+premium_header("Comprehensive Learner Profile",
+               "Your academic competencies, assessed skill levels, and learning readiness.", "👤")
+neon_divider()
 
 if not st.session_state.get("student_id"):
     st.warning("⚠️ Please register or log in first (Registration page).")
@@ -35,45 +37,42 @@ if not st.session_state.get("student_id"):
 student_id = st.session_state.student_id
 student = get_student_by_id(student_id)
 if not student:
-    st.error("Student profile not found in database. Please log in again.")
+    st.error("Student profile not found. Please log in again.")
     st.stop()
 
 skills = get_student_skills(student_id)
 assessment = get_assessment(student_id)
 profile = build_profile(student, skills, assessment)
 
-# ── Profile Header Metrics ────────────────────────────────────────────────────
+# ── Profile Header Metrics ────────────────────────────────────────
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("🎯 Total Tracked Skills", profile["skill_count"])
+    st.metric("🎯 Total Skills", profile["skill_count"])
 with col2:
-    st.metric("⭐ Avg Proficiency Score", f"{profile['avg_proficiency']:.1f} / 5.0")
+    st.metric("⭐ Avg Proficiency", f"{profile['avg_proficiency']:.1f} / 5.0")
 with col3:
-    st.metric("💪 Identified Strengths", len(profile["strong_skills"]))
+    st.metric("💪 Strengths", len(profile["strong_skills"]))
 with col4:
     st.metric("📚 Growth Areas", len(profile["weak_skills"]))
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Student Card ──────────────────────────────────────────────────────────────
-st.markdown(f"""
-<div style="background:linear-gradient(135deg,#1A2332,#1E3048); border:1px solid #1E88E5;
-            border-radius:12px; padding:1.4rem; margin-bottom:1.5rem;">
-    <h2 style="color:white; margin:0; font-size:1.6rem;">👤 {student['name']}</h2>
-    <p style="color:#90CAF9; margin:0.3rem 0; font-size:0.95rem;">
-        🎓 <b>Program:</b> {student.get('education_level','B.Tech')} &nbsp;|&nbsp;
-        🏛️ <b>Department:</b> {student.get('department','Engineering')} &nbsp;|&nbsp;
-        📅 <b>Year:</b> {student.get('year_of_study','3rd Year')}
+# ── Student Card ──────────────────────────────────────────────────
+glass_card(f"""
+    <h2 style="color:white !important; margin:0; font-size:1.5rem;">👤 {student['name']}</h2>
+    <p style="color:#7B8FA3 !important; margin:0.4rem 0; font-size:0.92rem;">
+        🎓 <b style="color:#B0C4DE;">{student.get('education_level','B.Tech')}</b> &nbsp;|&nbsp;
+        🏛️ <b style="color:#B0C4DE;">{student.get('department','Engineering')}</b> &nbsp;|&nbsp;
+        📅 <b style="color:#B0C4DE;">{student.get('year_of_study','3rd Year')}</b>
     </p>
-    <p style="color:#BBDEFB; margin:0.3rem 0; font-size:0.9rem;">
-        🎯 <b>Stated Career Interests:</b> {student.get('interests','General Technology')}
+    <p style="color:#5A6B7D !important; margin:0.3rem 0; font-size:0.88rem;">
+        🎯 <b style="color:#7B8FA3;">Interests:</b> {student.get('interests','General Technology')}
     </p>
-</div>
-""", unsafe_allow_html=True)
+""")
 
-tab1, tab2, tab3 = st.tabs(["📊 Interactive Analytics", "🛠️ Technical Competencies", "🤝 Soft Skills"])
+tab1, tab2, tab3 = st.tabs(["📊 Interactive Analytics", "🛠️ Technical Skills", "🤝 Soft Skills"])
 
-# ── Tab 1: Charts ─────────────────────────────────────────────────────────────
+# ── Tab 1: Charts ─────────────────────────────────────────────────
 with tab1:
     all_scores = profile["all_skill_scores"]
 
@@ -83,7 +82,7 @@ with tab1:
         col1, col2 = st.columns(2)
 
         with col1:
-            st.markdown("#### 🕸️ Competency Radar Chart")
+            st.markdown("#### 🕸️ Competency Radar")
             categories = list(all_scores.keys())[:12]
             values = [all_scores[c] for c in categories]
             fig = go.Figure()
@@ -91,29 +90,28 @@ with tab1:
                 r=values + [values[0]],
                 theta=categories + [categories[0]],
                 fill="toself",
-                fillcolor="rgba(21,101,192,0.25)",
-                line=dict(color="#1E88E5", width=2),
+                fillcolor="rgba(0,212,255,0.12)",
+                line=dict(color="#00D4FF", width=2),
             ))
             fig.update_layout(
                 polar=dict(
-                    radialaxis=dict(visible=True, range=[0, 5], gridcolor="#263340", color="#90CAF9"),
-                    angularaxis=dict(gridcolor="#263340", color="#90CAF9"),
-                    bgcolor="#1A2332",
+                    radialaxis=dict(visible=True, range=[0, 5], gridcolor="rgba(255,255,255,0.06)", color="#7B8FA3"),
+                    angularaxis=dict(gridcolor="rgba(255,255,255,0.06)", color="#7B8FA3"),
+                    bgcolor="rgba(0,0,0,0)",
                 ),
-                paper_bgcolor="#0A1628",
-                font=dict(color="#FFFFFF"),
-                showlegend=False,
-                height=380,
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#B0C4DE"),
+                showlegend=False, height=380,
                 margin=dict(l=40, r=40, t=20, b=20),
             )
             st.plotly_chart(fig, use_container_width=True)
 
         with col2:
-            st.markdown("#### 📊 Top Assessed Skills")
+            st.markdown("#### 📊 Top Skills")
             sorted_skills = sorted(all_scores.items(), key=lambda x: -x[1])[:10]
             names = [s[0] for s in sorted_skills]
             vals = [s[1] for s in sorted_skills]
-            colors = ["#4CAF50" if v >= 4 else "#1E88E5" if v >= 3 else "#FF9800" if v >= 2 else "#F44336"
+            colors = ["#00F5D4" if v >= 4 else "#00D4FF" if v >= 3 else "#FFD700" if v >= 2 else "#FF006E"
                       for v in vals]
             fig2 = go.Figure(go.Bar(
                 x=vals, y=names, orientation="h",
@@ -122,13 +120,12 @@ with tab1:
                 textposition="outside",
             ))
             fig2.update_layout(
-                xaxis=dict(range=[0, 6], color="#90CAF9", gridcolor="#263340"),
-                yaxis=dict(color="#90CAF9", autorange="reversed"),
-                paper_bgcolor="#0A1628",
-                plot_bgcolor="#1A2332",
-                font=dict(color="#FFFFFF"),
-                height=380,
-                margin=dict(l=10, r=60, t=20, b=20),
+                xaxis=dict(range=[0, 6], color="#7B8FA3", gridcolor="rgba(255,255,255,0.06)"),
+                yaxis=dict(color="#B0C4DE", autorange="reversed"),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#B0C4DE"),
+                height=380, margin=dict(l=10, r=60, t=20, b=20),
                 showlegend=False,
             )
             st.plotly_chart(fig2, use_container_width=True)
@@ -148,21 +145,20 @@ with tab1:
             labels=list(buckets.keys()),
             values=list(buckets.values()),
             hole=0.45,
-            marker=dict(colors=["#4CAF50", "#2196F3", "#FF9800", "#F44336", "#9E9E9E"]),
+            marker=dict(colors=["#00F5D4", "#00D4FF", "#FFD700", "#FF006E", "#5A6B7D"]),
         ))
         fig3.update_layout(
-            paper_bgcolor="#0A1628",
-            font=dict(color="#FFFFFF"),
-            height=300,
-            margin=dict(l=20, r=20, t=20, b=20),
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#B0C4DE"),
+            height=300, margin=dict(l=20, r=20, t=20, b=20),
         )
         st.plotly_chart(fig3, use_container_width=True)
 
-# ── Tab 2: Technical Skills ───────────────────────────────────────────────────
+# ── Tab 2: Technical Skills ───────────────────────────────────────
 with tab2:
     tech = profile["technical_skills"]
     if not tech:
-        st.info("No technical skills registered yet. Add them in the Registration or Skill Assessment page.")
+        st.info("No technical skills registered yet.")
     else:
         for skill in sorted(tech, key=lambda x: -x["proficiency"]):
             pct = skill["proficiency"] / 5.0
@@ -171,11 +167,11 @@ with tab2:
             st.markdown(f"{c_badge} **{skill['skill_name']}** — Level {skill['proficiency']}/5 ({label})")
             st.progress(pct)
 
-# ── Tab 3: Soft Skills ────────────────────────────────────────────────────────
+# ── Tab 3: Soft Skills ────────────────────────────────────────────
 with tab3:
     soft = profile["soft_skills"]
     if not soft:
-        st.info("No soft skills registered yet. Complete your Skill Assessment to benchmark them.")
+        st.info("No soft skills registered yet.")
     else:
         for skill in sorted(soft, key=lambda x: -x["proficiency"]):
             pct = skill["proficiency"] / 5.0
@@ -184,11 +180,11 @@ with tab3:
             st.markdown(f"{c_badge} **{skill['skill_name']}** — Level {skill['proficiency']}/5 ({label})")
             st.progress(pct)
 
-# ── Navigation Footer ─────────────────────────────────────────────────────────
-st.markdown("---")
+# ── Navigation Footer ─────────────────────────────────────────────
+neon_divider()
 c_act1, c_act2 = st.columns(2)
 with c_act1:
-    if st.button("📊 Take Skill Assessment / Quiz →", use_container_width=True):
+    if st.button("📊 Take Skill Assessment →", use_container_width=True):
         st.switch_page("pages/3_Skill_Assessment.py")
 with c_act2:
     if st.button("🎯 View Career Recommendations →", use_container_width=True):

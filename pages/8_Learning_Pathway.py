@@ -19,15 +19,18 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+from assets.premium_ui import inject_premium_ui, premium_header, neon_divider, glass_card
+inject_premium_ui("pathway")
+
 from modules.student_registration import get_student_by_id, get_student_skills
 from modules.learning_pathway import get_learning_path, save_pathway, get_pathway
 from modules.progress_tracking import get_progress, mark_topic_complete
 from ml.recommendation_model import get_recommender
 from ml.data_preprocessing import load_or_create_processed_data
 
-st.markdown("# 🗺️ Personalized Learning Pathway")
-st.markdown("Your structured, multi-tier curriculum designed to bridge skill gaps.")
-st.markdown("---")
+premium_header("Personalized Learning Pathway",
+               "Your structured, multi-tier curriculum designed to bridge diagnosed skill gaps.", "🗺️")
+neon_divider()
 
 if not st.session_state.get("student_id"):
     st.warning("⚠️ Please register or log in first (Registration page).")
@@ -52,16 +55,13 @@ if not recs and student_skills:
     except Exception:
         recs = []
 
-# Load all available career titles from dataset
 career_df, _ = load_or_create_processed_data()
 all_careers = sorted(career_df["career_title"].unique().tolist()) if career_df is not None else []
 
-# Order dropdown: recommended careers first, then all remaining careers
 rec_titles = [r["career_title"] for r in recs]
 remaining = [c for c in all_careers if c not in rec_titles]
 career_options = rec_titles + remaining if rec_titles else (all_careers or ["Data Analyst", "Software Developer", "Data Scientist"])
 
-# Career selector
 default_career = st.session_state.get("selected_career", rec_titles[0] if rec_titles else career_options[0])
 if default_career not in career_options:
     default_career = career_options[0]
@@ -73,7 +73,6 @@ career_title = st.selectbox(
 )
 st.session_state["selected_career"] = career_title
 
-# Determine matching and missing skills for this career
 matching_skills = []
 missing_skills = []
 c_desc = ""
@@ -96,22 +95,22 @@ elif career_df is not None:
         matching_skills = [s for s in req_list if s.lower() in st_skills_set]
         missing_skills = [s for s in req_list if s.lower() not in st_skills_set]
 
-# ── Career Overview & Gap Analysis Pill Card ──────────────────────────────────
-match_pills = " ".join([f"<span style='background:#1B5E20; color:#E8F5E9; padding:2px 8px; border-radius:12px; font-size:0.8rem; margin-right:4px;'>✓ {s}</span>" for s in matching_skills]) or "<span style='color:#90CAF9; font-size:0.82rem;'>No exact matches recorded yet</span>"
-gap_pills = " ".join([f"<span style='background:#B71C1C; color:#FFEBEE; padding:2px 8px; border-radius:12px; font-size:0.8rem; margin-right:4px;'>! {s}</span>" for s in missing_skills[:6]]) or "<span style='color:#A5D6A7; font-size:0.82rem;'>All key skills matched!</span>"
+# ── Overview Pill Card ────────────────────────────────────────────
+match_pills = " ".join([f"<span style='background:rgba(0,245,212,0.15); color:#00F5D4; border:1px solid rgba(0,245,212,0.3); padding:2px 8px; border-radius:12px; font-size:0.8rem; margin-right:4px;'>✓ {s}</span>" for s in matching_skills]) or "<span style='color:#7B8FA3; font-size:0.82rem;'>No exact matches recorded yet</span>"
+gap_pills = " ".join([f"<span style='background:rgba(255,0,110,0.15); color:#FF006E; border:1px solid rgba(255,0,110,0.3); padding:2px 8px; border-radius:12px; font-size:0.8rem; margin-right:4px;'>! {s}</span>" for s in missing_skills[:6]]) or "<span style='color:#00F5D4; font-size:0.82rem;'>All key skills matched!</span>"
 
 st.markdown(f"""
-<div style="background:#132238; border:1px solid #1E3A5F; border-radius:10px; padding:1.2rem; margin-bottom:1rem;">
+<div class="glass-card" style="margin-bottom:1rem; border-left:3px solid #00D4FF;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="color:#FFFFFF; margin:0;">🎯 {career_title}</h3>
-        <span style="background:#1565C0; color:white; padding:3px 10px; border-radius:10px; font-size:0.75rem; font-weight:700;">{c_category}</span>
+        <h3 style="color:#FFFFFF !important; margin:0; font-size:1.25rem;">🎯 {career_title}</h3>
+        <span class="neon-badge" style="background:rgba(0,212,255,0.15); color:#00D4FF; border:1px solid rgba(0,212,255,0.3);">{c_category}</span>
     </div>
-    <p style="color:#BBDEFB; font-size:0.88rem; margin:0.4rem 0 0.8rem 0;">{c_desc}</p>
+    <p style="color:#B0C4DE !important; font-size:0.88rem; margin:0.4rem 0 0.8rem 0;">{c_desc}</p>
     <div style="margin-bottom:0.4rem;">
-        <span style="color:#81C784; font-size:0.82rem; font-weight:700;">Matched Skills: </span>{match_pills}
+        <span style="color:#00F5D4; font-size:0.82rem; font-weight:700;">Matched Skills: </span>{match_pills}
     </div>
     <div>
-        <span style="color:#EF9A9A; font-size:0.82rem; font-weight:700;">Target Skill Gaps: </span>{gap_pills}
+        <span style="color:#FF006E; font-size:0.82rem; font-weight:700;">Target Skill Gaps: </span>{gap_pills}
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -138,20 +137,19 @@ completed_count = sum(1 for t in path if progress.get(t.get("topic", "").strip()
 total_count = len(path)
 pct = (completed_count / total_count) if total_count > 0 else 0.0
 
-# ── Header Banner ─────────────────────────────────────────────────────────────
+# ── Header Banner ─────────────────────────────────────────────────
 st.markdown(f"""
-<div style="background:linear-gradient(135deg,#0D47A1,#1565C0); border-radius:12px;
-            padding:1.4rem; margin-bottom:1rem; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+<div class="glass-card" style="padding:1.3rem; margin-bottom:1rem; border-color:rgba(0,212,255,0.25);">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <div>
-            <h2 style="color:white; margin:0;">📚 3-Tier Curriculum: {career_title}</h2>
-            <p style="color:#90CAF9; margin:0.3rem 0 0 0; font-size:0.9rem;">
-                Structured Progression: <b>Beginner</b> (Foundations) &rarr; <b>Intermediate</b> (Skill Gaps) &rarr; <b>Advanced</b> (Capstone)
+            <h2 style="color:white !important; margin:0; font-size:1.35rem;">📚 3-Tier Curriculum: {career_title}</h2>
+            <p style="color:#7B8FA3 !important; margin:0.3rem 0 0 0; font-size:0.88rem;">
+                Progression: <b style="color:#00F5D4;">Beginner</b> (Foundations) &rarr; <b style="color:#FFD700;">Intermediate</b> (Skill Gaps) &rarr; <b style="color:#FF006E;">Advanced</b> (Capstone)
             </p>
         </div>
         <div style="text-align:right;">
-            <div style="font-size:2.2rem; font-weight:800; color:#FFFFFF;">{round(pct*100, 1)}%</div>
-            <p style="color:#BBDEFB; font-size:0.8rem; margin:0;">{completed_count} of {total_count} Topics Completed</p>
+            <div style="font-size:2.2rem; font-weight:800; color:#00F5D4;">{round(pct*100, 1)}%</div>
+            <p style="color:#B0C4DE !important; font-size:0.8rem; margin:0;">{completed_count} of {total_count} Topics Completed</p>
         </div>
     </div>
 </div>
@@ -167,14 +165,14 @@ def on_toggle_topic(topic_name, c_title, st_id, key_name):
     mark_topic_complete(st_id, c_title, topic_name, is_checked)
 
 
-# ── Render by Tier (Beginner, Intermediate, Advanced) ─────────────────────────
+# ── Render by Tier (Beginner, Intermediate, Advanced) ─────────────
 tiers = [
-    ("🟢 Beginner Level: Foundations & Core Concepts", "Beginner", "#2E7D32"),
-    ("🟡 Intermediate Level: Practical Tools, Applied Skills & Skill Gaps", "Intermediate", "#F57F17"),
-    ("🔴 Advanced Level: Specialization & Production Capstone", "Advanced", "#C62828"),
+    ("🟢 Beginner Level: Foundations & Core Concepts", "Beginner", "#00F5D4", "tier-beginner"),
+    ("🟡 Intermediate Level: Applied Skills & Skill Gaps", "Intermediate", "#FFD700", "tier-intermediate"),
+    ("🔴 Advanced Level: Specialization & Production Capstone", "Advanced", "#FF006E", "tier-advanced"),
 ]
 
-for tier_title, tier_key, tier_color in tiers:
+for tier_title, tier_key, tier_color, tier_css in tiers:
     tier_items = [item for item in path if item.get("level", "Beginner") == tier_key]
     if not tier_items:
         continue
@@ -188,30 +186,27 @@ for tier_title, tier_key, tier_color in tiers:
         url = item.get("resource_url", item.get("url", ""))
 
         is_done = progress.get(topic, False)
-        bg = "#16281E" if is_done else "#141D2B"
-        border = "#388E3C" if is_done else "#223145"
+        card_class = "pathway-topic completed" if is_done else "pathway-topic"
         status_badge = "✅ COMPLETED" if is_done else "⬜ PENDING"
-        status_color = "#81C784" if is_done else "#90CAF9"
+        status_color = "#00F5D4" if is_done else "#7B8FA3"
 
         st.markdown(f"""
-        <div style="background:{bg}; border:1px solid {border}; border-radius:10px;
-                    padding:1rem 1.2rem; margin-bottom:0.6rem;">
+        <div class="{card_class}">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; align-items:center; gap:0.6rem;">
-                    <span style="background:{tier_color}; color:white; border-radius:50%;
+                    <span style="background:{tier_color}; color:#060B18; border-radius:50%;
                                  width:1.6rem; height:1.6rem; display:inline-flex;
                                  align-items:center; justify-content:center;
-                                 font-size:0.8rem; font-weight:700;">{step}</span>
-                    <span style="color:white; font-weight:600; font-size:1rem;">{topic}</span>
+                                 font-size:0.8rem; font-weight:800;">{step}</span>
+                    <span style="color:white; font-weight:600; font-size:0.98rem;">{topic}</span>
                 </div>
                 <span style="color:{status_color}; font-size:0.75rem; font-weight:700;">{status_badge}</span>
             </div>
-            <p style="color:#BBDEFB; margin:0.3rem 0 0 2.2rem; font-size:0.88rem;">{desc}</p>
-            {'<a href="' + url + '" target="_blank" style="color:#64B5F6; font-size:0.8rem; margin-left:2.2rem; text-decoration:none; display:inline-block; margin-top:4px;">🔗 Access Verified Study Resource &rarr;</a>' if url else ''}
+            <p style="color:#B0C4DE; margin:0.3rem 0 0 2.2rem; font-size:0.85rem;">{desc}</p>
+            {'<a href="' + url + '" target="_blank" style="color:#00D4FF; font-size:0.8rem; margin-left:2.2rem; text-decoration:none; display:inline-block; margin-top:4px;">🔗 Access Verified Study Resource &rarr;</a>' if url else ''}
         </div>
         """, unsafe_allow_html=True)
 
-        # Interactive Checkbox with instant callback
         checkbox_key = f"chk_path_{career_title}_{step}_{topic}"
         if checkbox_key not in st.session_state:
             st.session_state[checkbox_key] = is_done
@@ -225,7 +220,7 @@ for tier_title, tier_key, tier_color in tiers:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Summary & Next Action ──────────────────────────────────────────────────────
+# ── Summary & Next Action ─────────────────────────────────────────
 if pct == 1.0:
     st.balloons()
     st.success(f"🎉 Outstanding Achievement! You have completed the full learning pathway for **{career_title}**!")

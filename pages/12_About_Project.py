@@ -1,7 +1,6 @@
 """
 Page 12 – About Project
-Comprehensive overview of SkillMatch: problem statement, system architecture,
-ML algorithm breakdown, technology stack, and module descriptions.
+Comprehensive overview of SkillMatch: problem statement, architecture, ML breakdown, tech stack.
 """
 
 import streamlit as st
@@ -16,27 +15,32 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-st.markdown("# ℹ️ About SkillMatch System")
-st.markdown("---")
+from assets.premium_ui import inject_premium_ui, premium_header, neon_divider, glass_card
+inject_premium_ui("about")
 
-# ── Hero ──────────────────────────────────────────────────────────────────────
-st.markdown("""
-<div style="text-align:center; background:linear-gradient(135deg,#0D47A1,#1565C0,#1976D2);
-            border-radius:16px; padding:2.5rem 2rem; margin-bottom:1.5rem;">
-    <div style="font-size:3.5rem;">🎯</div>
-    <h1 style="color:white; font-size:2.3rem; font-weight:800; margin:0.4rem 0;">SkillMatch</h1>
-    <h3 style="color:#90CAF9; font-weight:400; margin:0; font-size:1.15rem;">
-        Mobile Skill-Based Learning and Career Recommendation System
-    </h3>
-    <p style="color:#BBDEFB; margin:0.8rem 0 0 0; font-size:0.95rem;">
-        B.Tech Academic Project | Powered by O*NET Occupational Data & Machine Learning
-    </p>
-</div>
-""", unsafe_allow_html=True)
+premium_header("About SkillMatch System",
+               "Mobile Skill-Based Learning and Career Recommendation System", "ℹ️")
+neon_divider()
+
+# ── Hero ──────────────────────────────────────────────────────────
+glass_card("""
+    <div style="text-align:center; padding:1.2rem 1rem;">
+        <div style="font-size:3.5rem; animation:float 3s ease-in-out infinite;">🎯</div>
+        <h1 style="color:white !important; font-size:2.2rem; font-weight:800; margin:0.3rem 0; font-family:'Orbitron',sans-serif;">
+            SkillMatch
+        </h1>
+        <h3 style="color:#00D4FF !important; font-weight:500; margin:0; font-size:1.1rem;">
+            AI-Powered Career Guidance & Skill Intelligence Platform
+        </h3>
+        <p style="color:#7B8FA3 !important; margin:0.6rem 0 0 0; font-size:0.92rem;">
+            B.Tech Academic Project | O*NET Occupational Data + Scikit-learn TF-IDF Machine Learning
+        </p>
+    </div>
+""")
 
 tab1, tab2, tab3, tab4 = st.tabs(["📋 Project Overview", "🤖 ML Recommendation Algorithm", "🏗️ System Architecture", "📦 Tech Stack"])
 
-# ── Tab 1: Overview ───────────────────────────────────────────────────────────
+# ── Tab 1: Overview ───────────────────────────────────────────────
 with tab1:
     col1, col2 = st.columns(2)
     with col1:
@@ -49,6 +53,7 @@ with tab1:
             "Generate personalized learning roadmaps categorized into Beginner, Intermediate, and Advanced tiers",
             "Track topic completion persistently in SQLite across application sessions",
             "Generate downloadable academic Career Report dossiers in PDF format",
+            "Provide 24/7 AI Career Assistant Chatbot with live student context",
         ]
         for obj in objectives:
             st.markdown(f"✅ {obj}")
@@ -56,7 +61,7 @@ with tab1:
         st.markdown("### ⚠️ Problem Statement")
         st.markdown("""
         B.Tech engineering graduates frequently struggle to bridge the divide between theoretical coursework
-        and dynamic industry occupational requirements. Generic career advice fails to diagnose specific competency deficits.
+        and dynamic industry requirements. Generic career advice fails to diagnose specific competency deficits.
         SkillMatch solves this through data-driven recommendations and explainable skill gap roadmaps.
         """)
 
@@ -72,18 +77,18 @@ with tab1:
             ("🗺️", "3-Tier Learning Pathway", "Beginner, Intermediate, and Advanced curricula with verified resources"),
             ("✅", "Progress Tracking", "Real-time checkbox topic completion stored in SQLite"),
             ("📄", "Downloadable PDF Report", "Official multi-page student dossier via ReportLab"),
+            ("💬", "AI Career Assistant Chatbot", "Personalized real-time AI guidance with live database context"),
         ]
         for icon, title, desc in features:
             st.markdown(f"""
-            <div style="background:#1A2332; border-radius:8px; padding:0.6rem 1rem;
-                        margin-bottom:0.5rem; border-left:3px solid #1E88E5;">
+            <div class="glass-card" style="padding:0.6rem 0.9rem; margin-bottom:0.4rem; border-left:3px solid #00D4FF;">
                 <span style="font-size:1.1rem;">{icon}</span>
                 <strong style="color:white;"> {title}</strong>
-                <p style="color:#90CAF9; margin:0; font-size:0.83rem;">{desc}</p>
+                <p style="color:#7B8FA3; margin:0; font-size:0.82rem;">{desc}</p>
             </div>
             """, unsafe_allow_html=True)
 
-# ── Tab 2: Algorithm ──────────────────────────────────────────────────────────
+# ── Tab 2: Algorithm ──────────────────────────────────────────────
 with tab2:
     st.markdown("### 🧮 Recommendation Algorithm: TF-IDF + Cosine Similarity")
     st.markdown("""
@@ -96,48 +101,42 @@ with tab2:
          "Standardized skill sets for each O*NET occupation are preprocessed, deduplicated, and converted into skill documents."),
         ("2", "TF-IDF Vector Space Construction",
          "The TfidfVectorizer computes term frequencies and inverse document frequencies across all careers. "
-         "Ubiquitous skills receive balanced weighting, while specialized technical skills (e.g., PyTorch, Kubernetes) receive elevated importance."),
+         "Ubiquitous skills receive balanced weighting, while specialized technical skills receive elevated importance."),
         ("3", "Student Competency Encoding",
          "The student's registered and assessed skills are projected into the identical N-dimensional TF-IDF feature space."),
         ("4", "Cosine Similarity Computation",
-         "cos(θ) = (S · C) / (||S|| × ||C||). Measures the directional alignment between student vector S and career vector C. "
-         "Returns normalized scores in [0.0, 1.0]."),
+         "cos(θ) = (S · C) / (||S|| × ||C||). Measures directional alignment between student vector S and career vector C. Returns scores in [0.0, 1.0]."),
         ("5", "Ranking & Rationale Generation",
          "Careers are sorted descending. Top-N matches are outputted alongside dynamic, transparent explanations detailing matched vs missing skills."),
     ]
 
     for step_num, title, desc in steps:
         st.markdown(f"""
-        <div style="background:#1A2332; border:1px solid #263340; border-radius:10px;
-                    padding:0.9rem 1.2rem; margin-bottom:0.6rem; display:flex; gap:1rem;">
-            <div style="background:#1565C0; color:white; border-radius:50%; width:1.8rem; height:1.8rem;
+        <div class="glass-card" style="padding:0.8rem 1.1rem; margin-bottom:0.5rem; display:flex; gap:1rem;">
+            <div style="background:linear-gradient(135deg,#00D4FF,#7B2FFF); color:white; border-radius:50%; width:1.8rem; height:1.8rem;
                         display:flex; align-items:center; justify-content:center;
-                        font-weight:700; min-width:1.8rem; font-size:0.9rem;">{step_num}</div>
+                        font-weight:800; min-width:1.8rem; font-size:0.9rem;">{step_num}</div>
             <div>
                 <strong style="color:white; font-size:0.95rem;">{title}</strong>
-                <p style="color:#90CAF9; margin:0.2rem 0 0 0; font-size:0.85rem;">{desc}</p>
+                <p style="color:#7B8FA3; margin:0.2rem 0 0 0; font-size:0.85rem;">{desc}</p>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-    st.info("""
-    **Transparency Declaration:** SkillMatch relies on deterministic, mathematically grounded NLP vectorization
-    rather than uninterpretable deep neural networks. Recommendation scores directly reflect true occupational overlap.
-    """)
-
-# ── Tab 3: Architecture ───────────────────────────────────────────────────────
+# ── Tab 3: Architecture ───────────────────────────────────────────
 with tab3:
     st.markdown("### 🏗️ Complete System Architecture")
     st.markdown("""
     ```
     ┌────────────────────────────────────────────────────────────────────────┐
     │                        STREAMLIT PRESENTATION LAYER                     │
-    │  app.py (Dashboard) + 12 Pages (Auth, Quiz, Profile, Recs, Gap,        │
-    │  Comparison, 3-Tier Roadmap, Tracking, PDF Dossier, Dataset Info...)   │
+    │  app.py (Dashboard) + 13 Pages (Auth, Quiz, Profile, Recs, Gap,        │
+    │  Comparison, Roadmap, Tracking, PDF Dossier, AI Assistant, Info...)    │
     └───────────────────────────────────┬────────────────────────────────────┘
                                         │
     ┌───────────────────────────────────▼────────────────────────────────────┐
     │                          BUSINESS LOGIC LAYER                          │
+    │  ai_chatbot.py           – Real-time Gemini/OpenAI API + context       │
     │  student_registration.py – Input validation, authentication, CRUD      │
     │  skill_assessment.py     – MCQ grading & real-time profile sync        │
     │  learner_profile.py      – Radar, bar, and proficiency aggregation     │
@@ -154,8 +153,9 @@ with tab3:
     │  feature_engineering.py       │  │  db_setup.py (Relational Schema)    │
     │  recommendation_model.py      │  │  skillmatch.db (SQLite with 6 tables│
     │  model_evaluation.py          │  │  students, student_skills,          │
-    └──────────────────┬────────────┘  │  assessments, recs, pathways, prog) │
-                       │               └─────────────────────────────────────┘
+    │                               │  │  assessments, recs, pathways, prog) │
+    └──────────────────┬────────────┘  └─────────────────────────────────────┘
+                       │
     ┌──────────────────▼─────────────────────────────────────────────────────┐
     │                          DATA LAYER (data/)                            │
     │  raw/        – Source O*NET occupational tables                        │
@@ -165,12 +165,13 @@ with tab3:
     ```
     """)
 
-# ── Tab 4: Tech Stack ─────────────────────────────────────────────────────────
+# ── Tab 4: Tech Stack ─────────────────────────────────────────────
 with tab4:
     st.markdown("### 📦 Technology Stack & Libraries")
     tech_items = [
         ("🐍", "Python 3.9+", "Core runtime environment and business logic"),
-        ("🌐", "Streamlit", "Reactive web frontend with session state management"),
+        ("🌐", "Streamlit 1.57+", "Reactive web frontend with session state & dialogs"),
+        ("🤖", "Google Gemini / OpenAI", "AI Career Assistant API integration"),
         ("🐼", "Pandas & NumPy", "Vectorized dataset manipulation and feature arrays"),
         ("🤖", "Scikit-learn", "TF-IDF vectorization and Cosine Similarity computation"),
         ("📊", "Plotly Express & Graph Objects", "Interactive radar charts, grouped bars, and donuts"),
@@ -185,9 +186,9 @@ with tab4:
         with c2:
             st.markdown(f"**{name}** – {desc}")
 
-    st.markdown("---")
+    neon_divider()
     st.markdown("""
-    <div style="text-align:center; color:#90CAF9; padding:0.5rem;">
+    <div style="text-align:center; color:#7B8FA3; padding:0.5rem;">
         <p>🎯 SkillMatch | B.Tech Academic Project Ready for Demonstration</p>
     </div>
     """, unsafe_allow_html=True)

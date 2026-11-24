@@ -1,6 +1,6 @@
 """
 Page 9 – Progress Tracking
-Monitors the student's learning journey and topic completion across all enrolled career pathways.
+Monitors student's learning journey and topic completion across all enrolled career pathways.
 Supports interactive topic completion with persistent SQLite storage.
 """
 
@@ -21,14 +21,17 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+from assets.premium_ui import inject_premium_ui, premium_header, neon_divider, glass_card
+inject_premium_ui("progress")
+
 from modules.progress_tracking import get_overall_progress, get_progress, mark_topic_complete
 from modules.learning_pathway import get_pathway, get_learning_path, save_pathway
 from modules.student_registration import get_student_by_id, get_student_skills
 from ml.recommendation_model import get_recommender
 
-st.markdown("# ✅ Learning Progress Tracking")
-st.markdown("Track and analyze your topic completion across all enrolled pathways.")
-st.markdown("---")
+premium_header("Learning Progress Tracking",
+               "Track and analyze your topic completion across all enrolled pathways.", "✅")
+neon_divider()
 
 if not st.session_state.get("student_id"):
     st.warning("⚠️ Please register or log in first (Registration page).")
@@ -39,7 +42,6 @@ student_name = st.session_state.get("student_name", "Student")
 
 overall = get_overall_progress(student_id)
 
-# If no progress recorded yet, attempt to auto-initialize for the student's target career
 if not overall:
     selected_c = st.session_state.get("selected_career")
     if not selected_c:
@@ -60,10 +62,10 @@ if not overall:
         overall = get_overall_progress(student_id)
 
 if not overall:
-    st.info("📚 No learning pathway progress recorded yet. Visit the **Learning Pathway** page to select a career and start marking completed topics!")
+    st.info("📚 No learning pathway progress recorded yet. Visit the **Learning Pathway** page to enroll in a career roadmap!")
     st.stop()
 
-# ── Overall Summary ───────────────────────────────────────────────────────────
+# ── Overall Summary ───────────────────────────────────────────────
 total_topics = sum(o["total_topics"] for o in overall)
 total_completed = sum(o["completed_topics"] for o in overall)
 overall_pct = round(total_completed / total_topics * 100, 1) if total_topics > 0 else 0
@@ -74,15 +76,15 @@ with col1:
 with col2:
     st.metric("📋 Total Topics", total_topics)
 with col3:
-    st.metric("✅ Completed Topics", total_completed)
+    st.metric("✅ Completed", total_completed)
 with col4:
-    st.metric("📈 Overall Completion", f"{overall_pct}%")
+    st.metric("📈 Overall Rate", f"{overall_pct}%")
 
 st.markdown(f"**Overall Learning Progress ({total_completed}/{total_topics} topics completed):**")
 st.progress(overall_pct / 100.0)
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Per-Career Cards ──────────────────────────────────────────────────────────
+# ── Per-Career Cards ──────────────────────────────────────────────
 st.markdown("### 🏆 Progress by Career Pathway")
 for entry in overall:
     ct = entry["career_title"]
@@ -90,56 +92,48 @@ for entry in overall:
     comp = entry["completed_topics"]
     tot = entry["total_topics"]
 
-    bar_color = "#4CAF50" if pct >= 75 else "#1E88E5" if pct >= 40 else "#FF9800"
+    bar_color = "#00F5D4" if pct >= 75 else "#00D4FF" if pct >= 40 else "#FFD700"
     emoji = "🥇" if pct == 100 else "🔥" if pct >= 75 else "📖"
 
     st.markdown(f"""
-    <div style="background:#132238; border:1px solid #1E3A5F; border-radius:10px; padding:1.2rem; margin-bottom:0.75rem;">
+    <div class="glass-card" style="margin-bottom:0.75rem; padding:1.1rem;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="color:white; font-weight:700; font-size:1.05rem;">{emoji} {ct}</span>
             <span style="color:{bar_color}; font-weight:800; font-size:1.15rem;">{pct}%</span>
         </div>
-        <p style="color:#90CAF9; margin:0.3rem 0; font-size:0.85rem;">{comp} of {tot} topics finished</p>
+        <p style="color:#7B8FA3; margin:0.3rem 0; font-size:0.85rem;">{comp} of {tot} topics finished</p>
     </div>
     """, unsafe_allow_html=True)
     st.progress(pct / 100.0)
 
-# ── Visual Progress Chart ─────────────────────────────────────────────────────
+# ── Visual Progress Chart ─────────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("### 📊 Progress Distribution Chart")
 df = pd.DataFrame(overall)
 if not df.empty:
     fig = go.Figure()
     fig.add_trace(go.Bar(
-        x=df["career_title"],
-        y=df["completed_topics"],
-        name="Completed",
-        marker_color="#2E7D32",
-        text=df["completed_topics"],
-        textposition="outside",
+        x=df["career_title"], y=df["completed_topics"],
+        name="Completed", marker_color="#00F5D4",
+        text=df["completed_topics"], textposition="outside",
     ))
     fig.add_trace(go.Bar(
-        x=df["career_title"],
-        y=df["total_topics"] - df["completed_topics"],
-        name="Remaining",
-        marker_color="#37474F",
-        text=(df["total_topics"] - df["completed_topics"]),
-        textposition="outside",
+        x=df["career_title"], y=df["total_topics"] - df["completed_topics"],
+        name="Remaining", marker_color="rgba(255,255,255,0.1)",
+        text=(df["total_topics"] - df["completed_topics"]), textposition="outside",
     ))
     fig.update_layout(
         barmode="stack",
-        xaxis=dict(color="#90CAF9", tickangle=-15),
-        yaxis=dict(title="Topics Count", color="#90CAF9", gridcolor="#263340"),
-        paper_bgcolor="#0A1628",
-        plot_bgcolor="#132238",
-        font=dict(color="#FFFFFF"),
-        legend=dict(bgcolor="#132238", bordercolor="#1E3A5F"),
-        height=340,
-        margin=dict(l=20, r=20, t=20, b=60),
+        xaxis=dict(color="#7B8FA3", tickangle=-15),
+        yaxis=dict(title="Topics Count", color="#7B8FA3", gridcolor="rgba(255,255,255,0.06)"),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#B0C4DE"),
+        legend=dict(bgcolor="rgba(0,0,0,0)", bordercolor="rgba(255,255,255,0.06)"),
+        height=340, margin=dict(l=20, r=20, t=20, b=60),
     )
     st.plotly_chart(fig, use_container_width=True)
 
-# ── Detailed Interactive Checklist ───────────────────────────────────────────
+# ── Detailed Interactive Checklist ───────────────────────────────
 st.markdown("### 🔍 Interactive Pathway Checklist")
 selected_c = st.selectbox("Select an enrolled pathway to inspect / update:", [o["career_title"] for o in overall])
 path_items = get_pathway(student_id, selected_c)
@@ -160,18 +154,17 @@ if path_items:
         url = item.get("url", item.get("resource_url", ""))
         is_done = prog_map.get(topic, False)
 
-        bg = "#16281E" if is_done else "#141D2B"
-        border = "#388E3C" if is_done else "#223145"
+        card_class = "pathway-topic completed" if is_done else "pathway-topic"
         status_txt = "✅ COMPLETED" if is_done else "⬜ PENDING"
-        status_col = "#81C784" if is_done else "#90CAF9"
+        status_col = "#00F5D4" if is_done else "#7B8FA3"
 
         st.markdown(f"""
-        <div style="background:{bg}; border:1px solid {border}; border-radius:8px; padding:0.8rem 1rem; margin-bottom:0.5rem;">
+        <div class="{card_class}">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="color:white; font-weight:600;">Step {step} [{level}]: {topic}</span>
                 <span style="color:{status_col}; font-weight:700; font-size:0.8rem;">{status_txt}</span>
             </div>
-            <p style="color:#BBDEFB; font-size:0.82rem; margin:0.2rem 0 0 0;">{desc}</p>
+            <p style="color:#B0C4DE; font-size:0.82rem; margin:0.2rem 0 0 0;">{desc}</p>
         </div>
         """, unsafe_allow_html=True)
 

@@ -1,5 +1,6 @@
 """
-Page 9 – Dataset Information
+Page 11 – Dataset Information
+Details about occupational data powering SkillMatch.
 """
 
 import streamlit as st
@@ -18,22 +19,22 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+from assets.premium_ui import inject_premium_ui, premium_header, neon_divider, glass_card
+inject_premium_ui("dataset")
+
 from ml.data_preprocessing import load_or_create_processed_data, get_sample_dataframe
 
-st.markdown("# 🗄️ Dataset Information")
-st.markdown("Details about the occupational data powering SkillMatch.")
-st.markdown("---")
+premium_header("Dataset Information",
+               "Details about the occupational data powering SkillMatch.", "🗄️")
+neon_divider()
 
-# ── Source info ───────────────────────────────────────────────────────────────
-st.markdown("""
-<div style="background:linear-gradient(135deg,#1A2332,#1E3048); border:1px solid #1E88E5;
-            border-radius:12px; padding:1.5rem; margin-bottom:1.5rem;">
-    <h2 style="color:white; margin:0;">📊 O*NET Occupational Information Network</h2>
-    <p style="color:#90CAF9; margin:0.5rem 0 0 0;">
+# ── Source info ───────────────────────────────────────────────────
+glass_card("""
+    <h2 style="color:white !important; margin:0; font-size:1.4rem;">📊 O*NET Occupational Information Network</h2>
+    <p style="color:#7B8FA3 !important; margin:0.4rem 0 0 0; font-size:0.92rem;">
         Primary data source for all career and skill information.
     </p>
-</div>
-""", unsafe_allow_html=True)
+""")
 
 col1, col2 = st.columns(2)
 with col1:
@@ -59,18 +60,18 @@ with col2:
     | Abilities | Ability ratings |
     """)
 
-st.markdown("---")
+neon_divider()
 
-# ── Current dataset ───────────────────────────────────────────────────────────
+# ── Current dataset ───────────────────────────────────────────────
 df, source = load_or_create_processed_data()
 
-source_color = "#2E7D32" if source == "onet" else "#F57F17"
+source_color = "#00F5D4" if source == "onet" else "#FFD700"
 source_label = "✅ O*NET Official Database" if source == "onet" else "⚠️ Built-in Sample Dataset (O*NET-based)"
 
 st.markdown(f"""
-<div style="background:#1A2332; border-left:4px solid {source_color}; border-radius:8px; padding:1rem 1.5rem;">
-    <h3 style="color:white; margin:0;">Active Dataset: {source_label}</h3>
-    <p style="color:#90CAF9; margin:0.3rem 0 0 0;">
+<div class="glass-card" style="border-left:3px solid {source_color}; padding:1rem 1.4rem;">
+    <h3 style="color:white !important; margin:0; font-size:1.1rem;">Active Dataset: {source_label}</h3>
+    <p style="color:#7B8FA3 !important; margin:0.3rem 0 0 0; font-size:0.85rem;">
         {len(df)} career profiles loaded | {df['category'].nunique() if 'category' in df.columns else 'N/A'} categories
     </p>
 </div>
@@ -78,7 +79,7 @@ st.markdown(f"""
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Stats ─────────────────────────────────────────────────────────────────────
+# ── Stats ─────────────────────────────────────────────────────────
 col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("📋 Career Profiles", len(df))
@@ -88,19 +89,19 @@ with col3:
     avg_skills = df["skills_list"].apply(lambda x: len(str(x).split(","))).mean()
     st.metric("⚙️ Avg Skills/Career", f"{avg_skills:.1f}")
 
-# ── Category breakdown ────────────────────────────────────────────────────────
+# ── Category breakdown ────────────────────────────────────────────
 if "category" in df.columns:
     st.markdown("### 📂 Career Categories")
     cat_counts = df["category"].value_counts().reset_index()
     cat_counts.columns = ["Category", "Count"]
     st.dataframe(cat_counts, use_container_width=True)
 
-# ── Preview ───────────────────────────────────────────────────────────────────
+# ── Preview ───────────────────────────────────────────────────────
 st.markdown("### 👀 Dataset Preview")
 display_df = df[["career_title", "category", "onet_code", "description"]].head(20)
 st.dataframe(display_df, use_container_width=True)
 
-# ── Skills explorer ───────────────────────────────────────────────────────────
+# ── Skills explorer ───────────────────────────────────────────────
 st.markdown("### 🔍 Explore Skills for a Career")
 career_sel = st.selectbox("Select a career", df["career_title"].tolist())
 row = df[df["career_title"] == career_sel].iloc[0]
@@ -112,18 +113,13 @@ st.markdown("**Required Skills:**")
 skills = [s.strip() for s in str(row.get("skills_list", "")).split(",") if s.strip()]
 cols = st.columns(4)
 for i, sk in enumerate(skills):
-    cols[i % 4].markdown(f"<span style='background:#1565C0; color:white; padding:0.2rem 0.5rem; "
-                          f"border-radius:12px; font-size:0.8rem; display:inline-block; margin:2px;'>{sk}</span>",
-                          unsafe_allow_html=True)
+    cols[i % 4].markdown(f"<span class='neon-badge' style='background:rgba(0,212,255,0.15); color:#00D4FF; border:1px solid rgba(0,212,255,0.3); margin:2px;'>{sk}</span>", unsafe_allow_html=True)
 
-# ── Upload custom dataset ─────────────────────────────────────────────────────
-st.markdown("---")
+# ── Upload custom dataset ─────────────────────────────────────────
+neon_divider()
 st.markdown("### 📂 Upload Your Own Dataset")
 st.info("""
 Upload a CSV with columns: **career_title**, **skills_list**, **description** (optional), **category** (optional).
-
-The skills_list column should be comma-separated skills, e.g.:  
-`Python, SQL, Machine Learning, Communication`
 """)
 
 uploaded = st.file_uploader("Upload CSV", type=["csv"])
@@ -147,7 +143,6 @@ if uploaded:
             processed_path = os.path.join(ROOT, "data", "processed", "cleaned_career_skills.csv")
             custom_df.to_csv(processed_path, index=False)
 
-            # Reset recommender
             import ml.recommendation_model as rm
             rm._recommender = None
 
@@ -156,8 +151,8 @@ if uploaded:
     except Exception as e:
         st.error(f"Error reading CSV: {e}")
 
-# ── Citation ──────────────────────────────────────────────────────────────────
-st.markdown("---")
+# ── Citation ──────────────────────────────────────────────────────
+neon_divider()
 st.markdown("""
 ### 📖 Citation
 > National Center for O*NET Development. (2024). *O*NET 28.1 Database*.  

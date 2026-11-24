@@ -1,8 +1,6 @@
 """
 Page 3 – Skill Assessment
-Provides interactive multiple-choice quiz questions and competency sliders
-covering Python, Java, SQL, Machine Learning, Communication, Problem Solving, etc.
-Automatically computes scores and immediately updates the student's skill profile in SQLite.
+Interactive MCQ quiz and competency sliders. Auto-computes scores and syncs to SQLite.
 """
 
 import streamlit as st
@@ -21,16 +19,18 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+from assets.premium_ui import inject_premium_ui, premium_header, neon_divider
+inject_premium_ui("assessment")
+
 from modules.skill_assessment import (
     QUIZ_QUESTIONS, ASSESSMENT_DOMAINS,
     calculate_quiz_scores, save_assessment, get_assessment, get_proficiency_label
 )
 
-st.markdown("# 📊 Interactive Skill Assessment")
-st.markdown("Evaluate your technical and soft skills through structured quiz questions and domain assessments.")
-st.markdown("---")
+premium_header("Interactive Skill Assessment",
+               "Evaluate your technical and soft skills through structured diagnostic tests.", "📊")
+neon_divider()
 
-# Auth check
 if not st.session_state.get("student_id"):
     st.warning("⚠️ Please register or log in first (Registration page).")
     st.stop()
@@ -42,10 +42,10 @@ existing = get_assessment(student_id)
 
 tab_quiz, tab_rating = st.tabs(["🎯 Multiple-Choice Skill Quiz", "🎚️ Comprehensive Domain Rating"])
 
-# ── TAB 1: MCQ QUIZ ───────────────────────────────────────────────────────────
+# ── TAB 1: MCQ QUIZ ───────────────────────────────────────────────
 with tab_quiz:
-    st.markdown("### 📝 Technical & Soft Skills Multiple-Choice Test")
-    st.caption("Answer the diagnostic questions below. Your proficiency will be automatically calculated and synced to your profile.")
+    st.markdown("### 📝 Technical & Soft Skills Diagnostic Test")
+    st.caption("Answer the diagnostic questions below. Proficiency is auto-calculated and synced.")
 
     with st.form("mcq_assessment_form"):
         quiz_answers = {}
@@ -59,7 +59,7 @@ with tab_quiz:
                 label_visibility="collapsed"
             )
             quiz_answers[q["id"]] = choice
-            st.markdown("<hr style='border-color:#263340; margin:0.4rem 0 1rem 0;'>", unsafe_allow_html=True)
+            st.markdown("<hr style='border-color:rgba(0,212,255,0.1); margin:0.4rem 0 1rem 0;'>", unsafe_allow_html=True)
 
         quiz_submitted = st.form_submit_button("🚀 Submit & Calculate Skill Scores", use_container_width=True)
 
@@ -73,9 +73,9 @@ with tab_quiz:
         st.session_state["recommendations"] = []
 
         pct_score = round(correct_cnt / total_cnt * 100, 1)
-        st.success(f"✅ Quiz Evaluation Complete! You scored **{correct_cnt}/{total_cnt} ({pct_score}%)**. Your skill profile has been updated immediately!")
+        st.success(f"✅ Quiz Complete! Score: **{correct_cnt}/{total_cnt} ({pct_score}%)**. Profile updated!")
 
-        with st.expander("🔍 View Question-by-Question Breakdown & Explanations", expanded=True):
+        with st.expander("🔍 View Breakdown & Explanations", expanded=True):
             for q in QUIZ_QUESTIONS:
                 user_a = quiz_answers.get(q["id"])
                 corr_a = q["correct"]
@@ -86,10 +86,10 @@ with tab_quiz:
 
         st.rerun()
 
-# ── TAB 2: DOMAIN RATINGS ─────────────────────────────────────────────────────
+# ── TAB 2: DOMAIN RATINGS ─────────────────────────────────────────
 with tab_rating:
     st.markdown("### 🎚️ Self-Assessment Rating Matrix")
-    st.caption("Fine-tune your assessed level across key domains. Rating scale: 1 = Novice → 5 = Expert")
+    st.caption("Fine-tune your level across key domains. 1 = Novice → 5 = Expert")
 
     scores = {}
     with st.form("slider_assessment_form"):
@@ -100,16 +100,12 @@ with tab_rating:
                     with cols[i]:
                         def_val = int(existing.get(sk_name, 3))
                         sc = st.slider(
-                            sk_name,
-                            min_value=1,
-                            max_value=5,
-                            value=def_val,
-                            help=sk_desc,
-                            key=f"sl_{sk_name}",
+                            sk_name, min_value=1, max_value=5, value=def_val,
+                            help=sk_desc, key=f"sl_{sk_name}",
                         )
                         scores[sk_name] = sc
                         lbl = get_proficiency_label(sc)
-                        c_hex = "#4CAF50" if sc >= 4 else "#2196F3" if sc >= 3 else "#FF9800" if sc >= 2 else "#F44336"
+                        c_hex = "#00F5D4" if sc >= 4 else "#00D4FF" if sc >= 3 else "#FFD700" if sc >= 2 else "#FF006E"
                         st.markdown(
                             f'<p style="color:{c_hex}; font-size:0.75rem; text-align:center; margin:0;">{lbl}</p>',
                             unsafe_allow_html=True,
@@ -123,13 +119,13 @@ with tab_rating:
         save_assessment(student_id, merged_scores)
         st.session_state["assessment_scores"] = merged_scores
         st.session_state["recommendations"] = []
-        st.success("✅ Assessment saved and synchronized with your student skill profile in SQLite!")
+        st.success("✅ Assessment saved and synced with your skill profile!")
         st.rerun()
 
-# ── CURRENT RADAR CHART ───────────────────────────────────────────────────────
+# ── CURRENT RADAR CHART ───────────────────────────────────────────
 current_scores = get_assessment(student_id)
 if current_scores:
-    st.markdown("---")
+    neon_divider()
     st.markdown("### 📊 Your Assessed Competency Radar")
     categories = list(current_scores.keys())[:12]
     values = [current_scores[c] for c in categories]
@@ -139,19 +135,19 @@ if current_scores:
         r=values + [values[0]],
         theta=categories + [categories[0]],
         fill="toself",
-        fillcolor="rgba(30,136,229,0.3)",
-        line=dict(color="#42A5F5", width=2),
+        fillcolor="rgba(0,212,255,0.15)",
+        line=dict(color="#00D4FF", width=2),
         name="Assessed Level",
     ))
     fig.update_layout(
         polar=dict(
-            radialaxis=dict(visible=True, range=[0, 5], gridcolor="#263340", color="#90CAF9"),
-            angularaxis=dict(gridcolor="#263340", color="#90CAF9"),
-            bgcolor="#1A2332",
+            radialaxis=dict(visible=True, range=[0, 5], gridcolor="rgba(255,255,255,0.06)", color="#7B8FA3"),
+            angularaxis=dict(gridcolor="rgba(255,255,255,0.06)", color="#7B8FA3"),
+            bgcolor="rgba(10,22,40,0.3)",
         ),
-        paper_bgcolor="#0A1628",
-        plot_bgcolor="#0A1628",
-        font=dict(color="#FFFFFF"),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#B0C4DE"),
         showlegend=False,
         height=450,
         margin=dict(l=40, r=40, t=20, b=20),
