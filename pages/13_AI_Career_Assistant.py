@@ -78,14 +78,26 @@ with st.sidebar:
             placeholder="AIzaSy...",
             value=st.session_state.get("GEMINI_API_KEY") or st.session_state.get("custom_gemini_key", "")
         )
-        if st.button("💾 Activate AI for Session", use_container_width=True):
-            if user_key.strip():
-                st.session_state["GEMINI_API_KEY"] = user_key.strip()
-                st.session_state["custom_gemini_key"] = user_key.strip()
-                st.success("✅ Live Gemini Key Activated!")
-                st.rerun()
-            else:
-                st.warning("Please enter a valid key.")
+        c_act1, c_act2 = st.columns(2)
+        with c_act1:
+            if st.button("💾 Activate AI for Session", use_container_width=True):
+                clean_k = user_key.strip().strip('"').strip("'")
+                if not clean_k:
+                    st.warning("Please enter a non-empty key.")
+                elif len(clean_k) < 20:
+                    st.error("⚠️ Invalid key format. Google Gemini keys start with 'AIzaSy' and are at least 25 characters.")
+                else:
+                    st.session_state["GEMINI_API_KEY"] = clean_k
+                    st.session_state["custom_gemini_key"] = clean_k
+                    st.success("✅ Live Gemini Key Activated!")
+                    st.rerun()
+        with c_act2:
+            if creds["is_configured"]:
+                if st.button("🔄 Reset to Local AI", use_container_width=True):
+                    st.session_state.pop("GEMINI_API_KEY", None)
+                    st.session_state.pop("custom_gemini_key", None)
+                    st.success("Switched to Built-in Local AI.")
+                    st.rerun()
 
         st.caption("Get a free key at [Google AI Studio](https://aistudio.google.com/app/apikey). You can also configure it in `.streamlit/secrets.toml`.")
 

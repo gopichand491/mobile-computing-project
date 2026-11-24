@@ -14,6 +14,72 @@ import requests
 import streamlit as st
 from typing import Dict, List, Any, Optional, Generator
 
+# ── Custom Gemini API Exception Hierarchy ─────────────────────────────────────
+
+class GeminiApiException(Exception):
+    """Base exception for Gemini API communication issues."""
+    pass
+
+
+class GeminiApiKeyInvalidError(GeminiApiException):
+    """Raised when the Gemini API key is missing, invalid, expired, or malformed."""
+    pass
+
+
+class GeminiQuotaExceededError(GeminiApiException):
+    """Raised when the Gemini API rate limit or quota has been reached."""
+    pass
+
+
+class GeminiPermissionError(GeminiApiException):
+    """Raised when the Gemini API request is forbidden or permission is denied."""
+    pass
+
+
+class GeminiServiceUnavailableError(GeminiApiException):
+    """Raised when the Google Gemini service is temporarily unavailable or unreachable."""
+    pass
+
+
+# ── API Key Validation Helper ─────────────────────────────────────────────────
+
+def is_plausible_gemini_key(key: Optional[str]) -> bool:
+    """
+    Check if a key is a plausible, structurally valid Google Gemini API key.
+    Valid keys typically start with 'AIzaSy' and are at least 25 characters.
+    Rejects obvious placeholders, dummy text, and whitespace.
+    """
+    if not key:
+        return False
+    k = str(key).strip().strip('"').strip("'")
+    if len(k) < 20:
+        return False
+    # Check for placeholder strings
+    low = k.lower()
+    placeholders = [
+        "none", "null", "undefined", "your_api_key_here", "your_gemini_api_key",
+        "your_key", "dummy", "placeholder", "replace_me", "api_key", "test_key"
+    ]
+    if low in placeholders:
+        return False
+    if "your_" in low or "example" in low:
+        return False
+    return True
+
+
+def is_plausible_openai_key(key: Optional[str]) -> bool:
+    """Check if a key is a plausible OpenAI API key (starts with sk- and >= 20 chars)."""
+    if not key:
+        return False
+    k = str(key).strip().strip('"').strip("'")
+    if len(k) < 20:
+        return False
+    low = k.lower()
+    if low in ("none", "null", "undefined", "your_openai_api_key", "your_key", "dummy"):
+        return False
+    return True
+
+
 # ── API Key Management ────────────────────────────────────────────────────────
 
 def get_api_credentials() -> Dict[str, Optional[str]]:
@@ -22,6 +88,7 @@ def get_api_credentials() -> Dict[str, Optional[str]]:
     1. Session state ('GEMINI_API_KEY' or 'custom_gemini_key')
     2. Streamlit secrets (.streamlit/secrets.toml or Streamlit Cloud Secrets)
     3. Environment variables
+    Validates key format before declaring is_configured=True.
     """
     gemini_key = None
     openai_key = None
@@ -31,36 +98,45 @@ def get_api_credentials() -> Dict[str, Optional[str]]:
         gemini_key = st.session_state.get("GEMINI_API_KEY") or st.session_state.get("custom_gemini_key")
         openai_key = st.session_state.get("OPENAI_API_KEY") or st.session_state.get("custom_openai_key")
         if gemini_key:
-            gemini_key = str(gemini_key).strip()
+            gemini_key = str(gemini_key).strip().strip('"').strip("'")
         if openai_key:
-            openai_key = str(openai_key).strip()
+            openai_key = str(openai_key).strip().strip('"').strip("'")
 
     # 2. Check Streamlit secrets
     if not gemini_key or not openai_key:
         try:
             if hasattr(st, "secrets"):
                 if not gemini_key:
-                    gemini_key = st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
+                    raw_g = st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
+                    if raw_g:
+                        gemini_key = str(raw_g).strip().strip('"').strip("'")
                 if not openai_key:
-                    openai_key = st.secrets.get("OPENAI_API_KEY")
+                    raw_o = st.secrets.get("OPENAI_API_KEY")
+                    if raw_o:
+                        openai_key = str(raw_o).strip().strip('"').strip("'")
         except Exception:
             pass
 
     # 3. Check environment variables
     if not gemini_key:
-        gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        raw_env_g = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if raw_env_g:
+            gemini_key = str(raw_env_g).strip().strip('"').strip("'")
     if not openai_key:
-        openai_key = os.environ.get("OPENAI_API_KEY")
+        raw_env_o = os.environ.get("OPENAI_API_KEY")
+        if raw_env_o:
+            openai_key = str(raw_env_o).strip().strip('"').strip("'")
 
     provider = None
     active_key = None
 
-    if gemini_key and len(str(gemini_key).strip()) > 5:
+    # Validate plausibility
+    if is_plausible_gemini_key(gemini_key):
         provider = "gemini"
-        active_key = str(gemini_key).strip()
-    elif openai_key and len(str(openai_key).strip()) > 5:
+        active_key = gemini_key
+    elif is_plausible_openai_key(openai_key):
         provider = "openai"
-        active_key = str(openai_key).strip()
+        active_key = openai_key
 
     return {
         "provider": provider,
@@ -345,15 +421,70 @@ As a **{d['education']}** student preparing for campus placements or off-campus 
 #### 💡 Pro Tip:
 Always explain your thought process out loud before writing code on the whiteboard or live editor!"""
 
-    # 5. INTENT: Programming Doubts (Python, SQL, ML, Git, Java, etc.)
-    elif any(k in q for k in ["python", "sql", "java", "code", "programming", "docker", "machine learning", "git"]):
+    # 5. INTENT: Machine Learning / AI / Data Science
+    elif any(k in q for k in ["machine learning", "ml", "artificial intelligence", "deep learning", "nlp", "computer vision", "model", "scikit", "tensorflow", "pytorch"]):
+        return f"""### 🤖 Machine Learning & Data Science Guidance for {name}
+
+Here is a structured engineering guide tailored for your career path toward **{target}**:
+
+#### 1. Core ML Workflow to Master:
+- **Data Preprocessing:** Handling missing values, categorical encoding (One-Hot, Target Encoding), feature scaling (StandardScaler, MinMaxScaler).
+- **Model Selection & Training:** Supervised algorithms (Linear/Logistic Regression, Decision Trees, Random Forests, XGBoost).
+- **Evaluation Metrics:** Choose metrics aligned with business objectives (Precision, Recall, F1-Score for imbalanced classes; RMSE/MAE for regression).
+- **Cross-Validation:** Use 5-fold or 10-fold cross-validation to prevent data leakage and overfitting.
+
+#### 2. Essential ML Code Pattern (Scikit-Learn Pipeline):
+```python
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+
+# 1. Build reproducible pipeline
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),
+    ('classifier', RandomForestClassifier(n_estimators=100, random_state=42))
+])
+
+# 2. Train & Evaluate
+pipeline.fit(X_train, y_train)
+y_pred = pipeline.predict(X_test)
+print(classification_report(y_test, y_pred))
+```
+
+#### 3. High-Impact Next Step:
+Deploy your trained model as a lightweight REST API using FastAPI or as an interactive dashboard using Streamlit!"""
+
+    # 6. INTENT: Capstone Projects / Portfolio Ideas
+    elif any(k in q for k in ["project", "projects", "capstone", "portfolio", "resume project", "build"]):
+        return f"""### 🚀 High-Impact Portfolio Project Ideas for **{target}**
+
+To stand out in recruitment drives and technical interviews, build end-to-end projects demonstrating real problem-solving:
+
+#### 🌟 1. Flagship Industry Project Idea:
+- **Title:** *End-to-End {target} Platform with Automated CI/CD*
+- **Problem Statement:** Build a real-world pipeline that ingests raw data, processes it via clean business logic, stores records in SQLite/PostgreSQL, and displays analytics on a web dashboard.
+- **Key Architecture:** Python (Backend) + SQLite / SQLAlchemy + Streamlit/FastAPI + Pytest test suite.
+
+#### 🛠️ 2. Key Elements That Impress Recruiters:
+- **Clean Git History:** Meaningful atomic commits (`feat:`, `fix:`, `docs:`) on your public GitHub.
+- **Automated Tests:** Include unit tests (`pytest`) covering edge cases and data validation.
+- **Comprehensive README:** Include architecture diagrams, installation instructions, and live demo links.
+- **Docker Containerization:** Add a working `Dockerfile` showing production deployment readiness.
+
+#### 💡 Pro Tip:
+A single well-tested, deployed application with 100% test coverage is worth five half-finished tutorial clones!"""
+
+    # 7. INTENT: Python Programming & Coding Doubts
+    elif any(k in q for k in ["python", "sql", "java", "code", "programming", "docker", "git"]):
         return f"""### 💻 Technical Programming Guidance & Best Practices
 
 Here are proven best practices tailored for your technical projects in **{d['department']}**:
 
 #### 1. Clean Code & Modular Architecture:
 - Separate business logic from data access layers and presentation.
-- Use meaningful variable names and type hinting (`def get_skills(student_id: int) -> List[str]:`).
+- Use meaningful variable names and type hinting (`def calculate_score(skills: List[str]) -> float:`).
 - Follow PEP 8 (Python) conventions or standard language guidelines.
 
 #### 2. Essential Code Example – Clean SQL Query with Joins:
@@ -372,7 +503,7 @@ ORDER BY r.match_score DESC;
 #### 3. Version Control Tip:
 Commit frequently with conventional commit messages: `feat:`, `fix:`, `docs:`, `test:`. This builds an impressive GitHub timeline for hiring managers!"""
 
-    # 6. GENERAL INTENT: Comprehensive Academic Mentorship
+    # 8. GENERAL INTENT: Comprehensive Academic Mentorship
     else:
         return f"""### 👋 Hello {name}! Here is your SkillMatch Academic Guidance
 
@@ -386,7 +517,9 @@ I am your **SkillMatch AI Career Mentor**. Here is a quick snapshot of your acti
 1. **Career Guidance:** Ask *"What careers best match my profile?"* to get an ML analysis.
 2. **Skill Diagnosis:** Ask *"What skills am I missing for {target}?"* to see your gap report.
 3. **Curriculum:** Ask *"Give me a 3-month roadmap"* for step-by-step milestones.
-4. **Interview Prep:** Ask *"What interview questions should I practice?"* for placement prep.
+4. **Machine Learning & Python:** Ask *"How do I build an ML pipeline in Python?"* for coding best practices.
+5. **Project Ideas:** Ask *"What projects should I build for {target}?"* for portfolio ideas.
+6. **Interview Prep:** Ask *"What interview questions should I practice?"* for placement prep.
 
 Feel free to ask any specific question about programming, technology stacks, or career choices!"""
 
@@ -395,10 +528,12 @@ Feel free to ask any specific question about programming, technology stacks, or 
 
 def call_gemini_api(api_key: str, messages: List[Dict[str, str]], system_prompt: str) -> str:
     """
-    Call Google Gemini REST API directly without heavy external dependencies.
+    Call Google Gemini REST API directly using modern supported endpoints.
+    Tries gemini-1.5-flash first, followed by gemini-2.0-flash, gemini-1.5-pro, and gemini-1.0-pro.
+    Properly classifies and raises specific GeminiApiExceptions for clean upstream handling.
     """
-    models = ["gemini-2.0-flash", "gemini-1.5-flash"]
-    last_err = None
+    # Supported Google Gemini models in order of performance and availability
+    models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.0-pro"]
 
     contents = []
     for m in messages:
@@ -421,11 +556,15 @@ def call_gemini_api(api_key: str, messages: List[Dict[str, str]], system_prompt:
     }
 
     headers = {"Content-Type": "application/json"}
+    last_status = None
+    last_err_text = ""
 
     for model_name in models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
         try:
-            resp = requests.post(url, headers=headers, json=payload, timeout=25)
+            resp = requests.post(url, headers=headers, json=payload, timeout=20)
+            last_status = resp.status_code
+
             if resp.status_code == 200:
                 data = resp.json()
                 candidates = data.get("candidates", [])
@@ -434,11 +573,39 @@ def call_gemini_api(api_key: str, messages: List[Dict[str, str]], system_prompt:
                     if parts:
                         return parts[0].get("text", "")
             else:
-                last_err = f"Gemini API Error ({resp.status_code}): {resp.text}"
-        except Exception as e:
-            last_err = f"Gemini Request Failed: {str(e)}"
+                last_err_text = resp.text
+                # If error is invalid API key, fail immediately across all models
+                try:
+                    err_json = resp.json().get("error", {})
+                    err_msg = str(err_json.get("message", "")).lower()
+                    err_status = str(err_json.get("status", "")).upper()
+                    if resp.status_code == 400 and ("api_key_invalid" in err_msg or "invalid" in err_msg or err_status == "INVALID_ARGUMENT"):
+                        raise GeminiApiKeyInvalidError("Google Gemini API key is invalid or not recognized.")
+                    elif resp.status_code == 429 or "resource_exhausted" in err_msg or err_status == "RESOURCE_EXHAUSTED":
+                        raise GeminiQuotaExceededError("Google Gemini API quota or rate limit exceeded.")
+                    elif resp.status_code == 403 or err_status == "PERMISSION_DENIED":
+                        raise GeminiPermissionError("Google Gemini API permission denied.")
+                except (GeminiApiKeyInvalidError, GeminiQuotaExceededError, GeminiPermissionError):
+                    raise
+                except Exception:
+                    pass
 
-    raise RuntimeError(last_err or "Gemini API failed to generate a response.")
+        except (GeminiApiKeyInvalidError, GeminiQuotaExceededError, GeminiPermissionError):
+            raise
+        except requests.exceptions.RequestException as req_err:
+            last_err_text = str(req_err)
+
+    # Classify final error state
+    if last_status == 400 or "api_key_invalid" in last_err_text.lower():
+        raise GeminiApiKeyInvalidError("Google Gemini API key is invalid or expired.")
+    elif last_status == 429:
+        raise GeminiQuotaExceededError("Google Gemini API quota reached.")
+    elif last_status == 403:
+        raise GeminiPermissionError("Google Gemini access forbidden.")
+    elif last_status and last_status >= 500:
+        raise GeminiServiceUnavailableError("Google Gemini servers temporarily unavailable.")
+
+    raise GeminiServiceUnavailableError("Unable to reach Google Gemini services.")
 
 
 def call_openai_api(api_key: str, messages: List[Dict[str, str]], system_prompt: str) -> str:
@@ -462,20 +629,32 @@ def call_openai_api(api_key: str, messages: List[Dict[str, str]], system_prompt:
         "max_tokens": 1024,
     }
 
-    resp = requests.post(url, headers=headers, json=payload, timeout=25)
-    if resp.status_code == 200:
-        data = resp.json()
-        return data["choices"][0]["message"]["content"]
-    else:
-        raise RuntimeError(f"OpenAI API Error ({resp.status_code}): {resp.text}")
+    try:
+        resp = requests.post(url, headers=headers, json=payload, timeout=20)
+        if resp.status_code == 200:
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
+        elif resp.status_code == 401:
+            raise GeminiApiKeyInvalidError("OpenAI API key is invalid or unauthorized.")
+        elif resp.status_code == 429:
+            raise GeminiQuotaExceededError("OpenAI rate limit or quota exceeded.")
+        else:
+            raise GeminiServiceUnavailableError(f"OpenAI service returned status {resp.status_code}")
+    except (GeminiApiKeyInvalidError, GeminiQuotaExceededError, GeminiServiceUnavailableError):
+        raise
+    except Exception as e:
+        raise GeminiServiceUnavailableError(f"OpenAI connection error: {e}")
 
 
 def generate_ai_response(user_query: str, chat_history: List[Dict[str, str]], student_id: Optional[int] = None) -> str:
     """
-    Unified entry point:
-    1. If external API credentials are configured, calls Cloud LLM (Gemini/OpenAI).
-    2. If external API is unavailable or encounters an error, seamlessly falls back
-       to the Built-in Local Career AI engine without blocking the user!
+    Unified entry point for AI responses:
+    1. If external API credentials are configured and valid, calls live cloud LLM.
+    2. If external API encounters an error (invalid key, quota exceeded, server error),
+       it NEVER crashes and NEVER displays raw error messages or stack traces to the user.
+       Instead, it generates an intelligent response using the Built-in Career AI engine
+       and attaches a clear, professional, friendly notification.
+    3. If no external key is configured, defaults seamlessly to the Built-in Career AI.
     """
     creds = get_api_credentials()
 
@@ -489,12 +668,48 @@ def generate_ai_response(user_query: str, chat_history: List[Dict[str, str]], st
                 return call_gemini_api(creds["key"], current_conversation, system_prompt)
             elif creds["provider"] == "openai":
                 return call_openai_api(creds["key"], current_conversation, system_prompt)
-        except Exception as e:
-            # Cloud failed, gracefully fallback to local AI with helpful status note
-            local_fallback = generate_local_ai_response(user_query, student_id, chat_history)
-            return f"{local_fallback}\n\n*Note: Cloud AI connection returned an error ({e}). Seamlessly served via Built-in Career AI.*"
 
-    # Default to Built-in Local AI Mode
+        except GeminiApiKeyInvalidError:
+            # Key was rejected by Google/OpenAI — fallback gracefully with helpful setup advice
+            local_reply = generate_local_ai_response(user_query, student_id, chat_history)
+            notice = (
+                "\n\n---\n"
+                "💡 **API Notice:** *The configured Google Gemini API key is invalid or has expired. "
+                "Your request was answered using SkillMatch's Built-in Career AI Mentor. "
+                "To enable live cloud LLM reasoning, please obtain a free key from "
+                "[Google AI Studio](https://aistudio.google.com/app/apikey) and update it in the sidebar settings.*"
+            )
+            return local_reply + notice
+
+        except GeminiQuotaExceededError:
+            local_reply = generate_local_ai_response(user_query, student_id, chat_history)
+            notice = (
+                "\n\n---\n"
+                "💡 **API Notice:** *The Google Gemini API rate limit or quota has been reached. "
+                "Your request was answered seamlessly using SkillMatch's Built-in Career AI Mentor.*"
+            )
+            return local_reply + notice
+
+        except GeminiPermissionError:
+            local_reply = generate_local_ai_response(user_query, student_id, chat_history)
+            notice = (
+                "\n\n---\n"
+                "💡 **API Notice:** *Google Gemini API access permission was not granted for this key. "
+                "Your request was answered using SkillMatch's Built-in Career AI Mentor.*"
+            )
+            return local_reply + notice
+
+        except Exception:
+            # Network timeout, DNS failure, or temporary server outage
+            local_reply = generate_local_ai_response(user_query, student_id, chat_history)
+            notice = (
+                "\n\n---\n"
+                "💡 **API Notice:** *Live cloud AI service is temporarily unavailable. "
+                "Your request was answered seamlessly using SkillMatch's Built-in Career AI Mentor.*"
+            )
+            return local_reply + notice
+
+    # Default to Built-in Local AI Mode (Zero key required)
     return generate_local_ai_response(user_query, student_id, chat_history)
 
 

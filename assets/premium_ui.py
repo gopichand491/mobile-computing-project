@@ -250,13 +250,24 @@ def show_ai_assistant_dialog():
             )
         with c_k2:
             if st.button("💾 Activate", key="dlg_save_key", use_container_width=True):
-                if user_key.strip():
-                    st.session_state["GEMINI_API_KEY"] = user_key.strip()
-                    st.session_state["custom_gemini_key"] = user_key.strip()
+                clean_k = user_key.strip().strip('"').strip("'")
+                if not clean_k:
+                    st.warning("Please enter a non-empty key.")
+                elif len(clean_k) < 20:
+                    st.error("Invalid format: Google Gemini keys start with 'AIzaSy' and are at least 25 characters.")
+                else:
+                    st.session_state["GEMINI_API_KEY"] = clean_k
+                    st.session_state["custom_gemini_key"] = clean_k
                     st.success("✅ Live AI Activated!")
                     st.rerun()
-                else:
-                    st.warning("Please enter a valid key.")
+
+        if creds["is_configured"]:
+            if st.button("🔄 Reset to Local AI", key="dlg_reset_key", use_container_width=True):
+                st.session_state.pop("GEMINI_API_KEY", None)
+                st.session_state.pop("custom_gemini_key", None)
+                st.success("Reset to Built-in Local AI.")
+                st.rerun()
+
         st.caption("Get a free key from [Google AI Studio](https://aistudio.google.com/app/apikey) | Never committed to Git.")
 
     # Quick Prompts

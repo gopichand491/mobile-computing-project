@@ -134,7 +134,8 @@ with st.sidebar:
             st.rerun()
 
     st.markdown("### 📋 Navigation")
-    st.page_link("app.py", label="🏠 Home Dashboard")
+    st.page_link("app.py", label="🏠 Home")
+    st.page_link("pages/1_Dashboard.py", label="📊 Analytics Dashboard")
 
     st.markdown("**Student Module**")
     st.page_link("pages/2_Registration.py", label="📝 Registration & Login")
@@ -216,6 +217,9 @@ if st.session_state.student_id:
         st.metric("🎯 Top Career Match", top_career[:18] + ("..." if len(top_career) > 18 else ""), top_score)
     with m4:
         st.metric("📈 Pathway Completion", path_pct, "topics done")
+
+    if st.button("📊 Open Interactive Analytics Dashboard →", use_container_width=True):
+        st.switch_page("pages/1_Dashboard.py")
 
 else:
     st_res = execute_query("SELECT COUNT(*) as cnt FROM students", fetch="one")

@@ -138,3 +138,57 @@ def test_generate_local_ai_response_intents(sample_student_id):
     resp_interview = generate_local_ai_response("What are common interview questions for software engineers?", sample_student_id)
     assert isinstance(resp_interview, str)
     assert "Interview" in resp_interview or "Questions" in resp_interview
+
+    # 5. ML query
+    resp_ml = generate_local_ai_response("How do I build a machine learning model pipeline?", sample_student_id)
+    assert isinstance(resp_ml, str)
+    assert "Machine Learning" in resp_ml or "Pipeline" in resp_ml or "Scikit" in resp_ml
+
+    # 6. Portfolio Project query
+    resp_proj = generate_local_ai_response("What portfolio projects should I build for my resume?", sample_student_id)
+    assert isinstance(resp_proj, str)
+    assert "Project" in resp_proj or "Portfolio" in resp_proj
+
+
+def test_is_plausible_gemini_key():
+    from modules.ai_chatbot import is_plausible_gemini_key
+
+    assert is_plausible_gemini_key(None) is False
+    assert is_plausible_gemini_key("") is False
+    assert is_plausible_gemini_key("your_api_key_here") is False
+    assert is_plausible_gemini_key("None") is False
+    assert is_plausible_gemini_key("dummy") is False
+    assert is_plausible_gemini_key("AIzaSyD-RealLookingGeminiKey39CharactersLong") is True
+
+
+def test_invalid_api_key_graceful_fallback(sample_student_id, monkeypatch):
+    """
+    Simulate Google returning 400 API_KEY_INVALID.
+    Verify that generate_ai_response does NOT throw an unhandled exception or display raw error.
+    """
+    from modules.ai_chatbot import generate_ai_response, GeminiApiKeyInvalidError
+    import requests
+
+    class Mock400Response:
+        status_code = 400
+        text = '{"error": {"code": 400, "message": "API key not valid. Please pass a valid API key.", "status": "INVALID_ARGUMENT"}}'
+        def json(self):
+            return json.loads(self.text)
+
+    import json
+    monkeypatch.setattr(requests, "post", lambda *args, **kwargs: Mock400Response())
+
+    # Set dummy valid-looking key in session state
+    st.session_state["GEMINI_API_KEY"] = "AIzaSyFakeKeyThatFailsAtGoogle400"
+    try:
+        reply = generate_ai_response("What are my skill gaps?", [], student_id=sample_student_id)
+        assert isinstance(reply, str)
+        # Should contain answer from local AI
+        assert len(reply) > 100
+        # Should NOT contain raw JSON error trace
+        assert '{"error": {"code": 400' not in reply
+        # Should contain friendly notice
+        assert "Notice" in reply or "API" in reply
+    finally:
+        del st.session_state["GEMINI_API_KEY"]
+
