@@ -78,18 +78,35 @@ def test_stream_text_generator():
     assert reconstructed == sample
 
 
-def test_missing_api_key_raises_error():
+def test_api_credentials_session_state_gemini_key():
+    st.session_state["GEMINI_API_KEY"] = "AIzaSyTestKeyFromSessionDirect"
+    creds = get_api_credentials()
+    assert creds["is_configured"] is True
+    assert creds["provider"] == "gemini"
+    assert creds["key"] == "AIzaSyTestKeyFromSessionDirect"
+    # Reset
+    del st.session_state["GEMINI_API_KEY"]
+
+
+def test_missing_api_key_uses_local_ai(sample_student_id):
     st.session_state["custom_gemini_key"] = ""
     st.session_state["custom_openai_key"] = ""
-    # Ensure env doesn't have it
+    if "GEMINI_API_KEY" in st.session_state:
+        del st.session_state["GEMINI_API_KEY"]
+    if "OPENAI_API_KEY" in st.session_state:
+        del st.session_state["OPENAI_API_KEY"]
+
     import os
     orig_g = os.environ.pop("GEMINI_API_KEY", None)
     orig_o = os.environ.pop("OPENAI_API_KEY", None)
     orig_google = os.environ.pop("GOOGLE_API_KEY", None)
 
     try:
-        with pytest.raises(ValueError, match="NO_API_KEY"):
-            generate_ai_response("What careers should I choose?", [], student_id=None)
+        # Should NOT raise an error; should return a helpful Built-in Local AI response
+        response = generate_ai_response("What careers should I choose?", [], student_id=sample_student_id)
+        assert isinstance(response, str)
+        assert len(response) > 50
+        assert "Career" in response or "SkillMatch" in response or "Recommendation" in response
     finally:
         if orig_g:
             os.environ["GEMINI_API_KEY"] = orig_g
@@ -97,3 +114,27 @@ def test_missing_api_key_raises_error():
             os.environ["OPENAI_API_KEY"] = orig_o
         if orig_google:
             os.environ["GOOGLE_API_KEY"] = orig_google
+
+
+def test_generate_local_ai_response_intents(sample_student_id):
+    from modules.ai_chatbot import generate_local_ai_response
+
+    # 1. Career recommendation query
+    resp_career = generate_local_ai_response("What are the best career paths for me?", sample_student_id)
+    assert isinstance(resp_career, str)
+    assert len(resp_career) > 40
+
+    # 2. Skill gap query
+    resp_gap = generate_local_ai_response("What are my skill gaps for Data Scientist?", sample_student_id)
+    assert isinstance(resp_gap, str)
+    assert "Skill" in resp_gap or "Gap" in resp_gap or "Match" in resp_gap
+
+    # 3. Roadmap query
+    resp_roadmap = generate_local_ai_response("Give me a 3-month roadmap to learn Python and Machine Learning", sample_student_id)
+    assert isinstance(resp_roadmap, str)
+    assert "Roadmap" in resp_roadmap or "Month" in resp_roadmap or "Phase" in resp_roadmap
+
+    # 4. Interview prep query
+    resp_interview = generate_local_ai_response("What are common interview questions for software engineers?", sample_student_id)
+    assert isinstance(resp_interview, str)
+    assert "Interview" in resp_interview or "Questions" in resp_interview

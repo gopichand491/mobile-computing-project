@@ -202,6 +202,7 @@ def show_ai_assistant_dialog():
     """
     Renders the AI Assistant inside a responsive modal dialog.
     Accessible from any page via the floating button or sidebar.
+    Supports both Built-in Local Career AI and Live Cloud LLM modes.
     """
     from modules.ai_chatbot import get_api_credentials, generate_ai_response, stream_text
 
@@ -210,38 +211,53 @@ def show_ai_assistant_dialog():
 
     student_name = st.session_state.get("student_name")
     student_id = st.session_state.get("student_id")
-    target_career = st.session_state.get("selected_career", "Technology Careers")
+    raw_career = st.session_state.get("selected_career")
+
+    s_name = student_name if student_name else "Guest Student"
+    t_career = raw_career if (raw_career and str(raw_career).strip().lower() != "none") else "Not Selected Yet"
 
     creds = get_api_credentials()
 
-    # Header / Context bar
-    context_desc = f"👤 **{student_name}** | 🎯 Target: **{target_career}**" if student_name else "💡 Log in for personalized skill guidance"
+    # Dynamic status badge
+    if creds["is_configured"]:
+        p_name = "GEMINI" if creds["provider"] == "gemini" else "OPENAI"
+        badge_html = f'<span style="background:rgba(0,245,212,0.15); color:#00F5D4; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;">🟢 LIVE AI ({p_name})</span>'
+    else:
+        badge_html = '<span style="background:rgba(0,212,255,0.15); color:#00D4FF; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;">⚡ LOCAL AI ACTIVE</span>'
+
+    # Sanitized context bar without raw markdown asterisks
     st.markdown(f"""
     <div style="background:rgba(0,212,255,0.06); border:1px solid rgba(0,212,255,0.2);
-                border-radius:10px; padding:0.6rem 0.9rem; margin-bottom:0.8rem; display:flex; justify-content:space-between; align-items:center;">
-        <span style="color:#B0C4DE; font-size:0.85rem;">{context_desc}</span>
-        <span style="background:rgba(0,245,212,0.15); color:#00F5D4; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;">
-            {'🟢 AI READY' if creds['is_configured'] else '🔴 KEY NEEDED'}
-        </span>
+                border-radius:10px; padding:0.6rem 0.9rem; margin-bottom:0.8rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <span style="color:#B0C4DE; font-size:0.85rem;">👤 <strong>{s_name}</strong> &nbsp;|&nbsp; 🎯 Target: <strong>{t_career}</strong></span>
+        {badge_html}
     </div>
     """, unsafe_allow_html=True)
 
-    # API Key Missing Notice
-    if not creds["is_configured"]:
-        st.warning("⚠️ **AI API Key Not Found**")
-        st.markdown("""
-        To enable real AI answers, provide a **free Google Gemini API key** from [Google AI Studio](https://aistudio.google.com/app/apikey):
-        """)
-        user_key = st.text_input("Enter Gemini API Key for this session:", type="password", placeholder="AIzaSy...", key="dlg_quick_key")
-        if st.button("💾 Activate AI for Session", key="dlg_save_key"):
-            if user_key.strip():
-                st.session_state["custom_gemini_key"] = user_key.strip()
-                st.success("✅ Gemini Key Activated!")
-                st.rerun()
-            else:
-                st.error("Please enter a valid key.")
-        st.caption("Or configure GEMINI_API_KEY permanently in `.streamlit/secrets.toml` or Streamlit Cloud Secrets.")
-        return
+    # Optional Live Cloud API Expander (collapsible, never blocks user)
+    with st.expander("⚙️ Connect Live Gemini / OpenAI API (Optional)", expanded=False):
+        st.markdown(
+            "Built-in Local AI is active by default. To connect live cloud reasoning, enter a free Gemini API key below:"
+        )
+        c_k1, c_k2 = st.columns([3, 1])
+        with c_k1:
+            user_key = st.text_input(
+                "Gemini API Key:",
+                type="password",
+                placeholder="AIzaSy...",
+                key="dlg_quick_key",
+                label_visibility="collapsed"
+            )
+        with c_k2:
+            if st.button("💾 Activate", key="dlg_save_key", use_container_width=True):
+                if user_key.strip():
+                    st.session_state["GEMINI_API_KEY"] = user_key.strip()
+                    st.session_state["custom_gemini_key"] = user_key.strip()
+                    st.success("✅ Live AI Activated!")
+                    st.rerun()
+                else:
+                    st.warning("Please enter a valid key.")
+        st.caption("Get a free key from [Google AI Studio](https://aistudio.google.com/app/apikey) | Never committed to Git.")
 
     # Quick Prompts
     c_q1, c_q2 = st.columns(2)
@@ -250,14 +266,15 @@ def show_ai_assistant_dialog():
         if st.button("🎯 Best careers for my skills?", key="dlg_q1", use_container_width=True):
             selected_quick = "What career paths best match my current skills and academic profile?"
     with c_q2:
-        if st.button(f"📉 Skill gaps for {target_career}?", key="dlg_q2", use_container_width=True):
-            selected_quick = f"What specific skill gaps do I have for {target_career}, and how can I start learning them?"
+        prompt_career_label = t_career if t_career != "Not Selected Yet" else "my target career"
+        if st.button(f"📉 Skill gaps for {prompt_career_label}?", key="dlg_q2", use_container_width=True):
+            selected_quick = f"What specific skill gaps do I have for {prompt_career_label}, and how can I start learning them?"
 
     # Chat history display
     chat_box = st.container(height=350)
     with chat_box:
         if not st.session_state.chat_messages:
-            st.info("👋 Hello! Ask me any question about your skills, career options, programming doubts, or interview prep.")
+            st.info("👋 Hello! I am your SkillMatch AI Career Assistant. Ask me anything about your skills, career roadmaps, or interview prep.")
         for msg in st.session_state.chat_messages:
             role = msg["role"]
             with st.chat_message(role, avatar="👤" if role == "user" else "🤖"):
@@ -276,7 +293,7 @@ def show_ai_assistant_dialog():
 
         with chat_box:
             with st.chat_message("assistant", avatar="🤖"):
-                with st.spinner("Thinking..."):
+                with st.spinner("Analyzing profile & formulating response..."):
                     try:
                         reply = generate_ai_response(
                             user_query=active_prompt,
@@ -293,7 +310,7 @@ def show_ai_assistant_dialog():
     with c_f1:
         if st.button("🗑️ Clear Chat", key="dlg_clear_btn", use_container_width=True):
             st.session_state.chat_messages = []
-            st.success("Chat history cleared!")
+            st.rerun()
     with c_f2:
         st.page_link("pages/13_AI_Career_Assistant.py", label="↗️ Full-Screen Assistant", use_container_width=True)
 

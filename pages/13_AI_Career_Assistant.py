@@ -1,7 +1,8 @@
 """
 Page 13 – Smart AI Career Assistant Chatbot
-Powered by real AI (Google Gemini / OpenAI) with secure Streamlit Secrets management.
-Provides real-time personalized career guidance, doubt resolution, and skill roadmaps.
+Powered by both:
+1. Built-in Local Career AI Mode (100% offline, zero-key fallback with SQLite & O*NET data)
+2. Live Cloud AI (Google Gemini / OpenAI REST APIs) with secure Streamlit Secrets management.
 """
 
 import streamlit as st
@@ -35,7 +36,8 @@ if "chat_messages" not in st.session_state:
 
 student_name = st.session_state.get("student_name")
 student_id = st.session_state.get("student_id")
-target_career = st.session_state.get("selected_career", "Technology Careers")
+raw_target = st.session_state.get("selected_career")
+target_career = raw_target if (raw_target and str(raw_target).strip().lower() != "none") else "Not Selected Yet"
 
 # ── API Status & Configuration Check ──────────────────────────────────────────
 creds = get_api_credentials()
@@ -45,17 +47,17 @@ with st.sidebar:
     st.markdown("### 🤖 Assistant Settings")
     if creds["is_configured"]:
         provider_label = "Google Gemini" if creds["provider"] == "gemini" else "OpenAI"
-        st.success(f"🟢 **AI Connected**: {provider_label}")
+        st.success(f"🟢 **Live AI Active**: {provider_label}")
     else:
-        st.warning("🔴 **AI Key Missing**")
+        st.info("⚡ **Built-in Local AI** (Active)")
 
     if student_name:
         st.markdown(f"""
         <div style="background:rgba(0,245,212,0.06); border:1px solid rgba(0,245,212,0.3);
                     border-radius:8px; padding:0.6rem 0.8rem; margin:0.5rem 0;">
             <p style="color:#00F5D4; margin:0; font-size:0.75rem; font-weight:700;">PERSONALIZED CONTEXT</p>
-            <p style="color:white; margin:0.2rem 0 0 0; font-size:0.88rem;">👤 {student_name}</p>
-            <p style="color:#7B8FA3; margin:0; font-size:0.75rem;">🎯 Target: {target_career}</p>
+            <p style="color:white; margin:0.2rem 0 0 0; font-size:0.88rem;">👤 <strong>{student_name}</strong></p>
+            <p style="color:#7B8FA3; margin:0; font-size:0.75rem;">🎯 Target: <strong>{target_career}</strong></p>
         </div>
         """, unsafe_allow_html=True)
     else:
@@ -65,78 +67,41 @@ with st.sidebar:
         st.session_state.chat_messages = []
         st.rerun()
 
-    # Manual Key Override Option
-    with st.expander("🔑 Configure / Override API Key", expanded=not creds["is_configured"]):
+    # Optional Live Cloud API Setup Expander
+    with st.expander("⚙️ Connect Live Gemini / OpenAI API (Optional)", expanded=False):
         st.markdown("""
-        Enter your API key below if not configured in `.streamlit/secrets.toml`:
+        Upgrade from Built-in Local AI to live cloud LLM responses anytime by entering your free API key:
         """)
-        user_key = st.text_input("Gemini API Key:", type="password", placeholder="AIzaSy...",
-                                 value=st.session_state.get("custom_gemini_key", ""))
-        if st.button("💾 Apply Key for Session", use_container_width=True):
+        user_key = st.text_input(
+            "Gemini API Key:",
+            type="password",
+            placeholder="AIzaSy...",
+            value=st.session_state.get("GEMINI_API_KEY") or st.session_state.get("custom_gemini_key", "")
+        )
+        if st.button("💾 Activate AI for Session", use_container_width=True):
             if user_key.strip():
+                st.session_state["GEMINI_API_KEY"] = user_key.strip()
                 st.session_state["custom_gemini_key"] = user_key.strip()
-                st.success("✅ Gemini key saved for this session!")
+                st.success("✅ Live Gemini Key Activated!")
                 st.rerun()
             else:
                 st.warning("Please enter a valid key.")
 
-
-# ── If API Key Missing: Show Clear Configuration Guide ─────────────────────────
-if not creds["is_configured"]:
-    st.markdown("""
-    <div class="glass-card" style="border:1px solid rgba(255,215,0,0.4); padding:1.8rem; margin-bottom:1.5rem;">
-        <div style="display:flex; align-items:center; gap:0.8rem;">
-            <span style="font-size:2rem;">⚠️</span>
-            <div>
-                <h3 style="color:#FFD700 !important; margin:0;">AI API Key Configuration Required</h3>
-                <p style="color:#B0C4DE !important; margin:0.2rem 0 0 0; font-size:0.9rem;">
-                    To enable genuine, real-time AI responses just like ChatGPT, connect a free Google Gemini or OpenAI API key.
-                </p>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    col_setup1, col_setup2 = st.columns(2)
-
-    with col_setup1:
-        st.markdown("### 🌟 Option 1: Free Google Gemini API (Recommended)")
-        st.markdown("""
-        1. **Get Free Key**: Visit [Google AI Studio](https://aistudio.google.com/app/apikey) and sign in.
-        2. Click **Create API Key** (100% free with generous rate limits).
-        3. Paste it directly in the **Sidebar Key Input** (left) to use immediately!
-        4. Or add it permanently to `.streamlit/secrets.toml`:
-        ```toml
-        # C:\\Users\\...\\SkillMatch\\.streamlit\\secrets.toml
-        GEMINI_API_KEY = "AIzaSyYourKeyHere"
-        ```
-        """)
-
-    with col_setup2:
-        st.markdown("### 🌐 Option 2: Streamlit Community Cloud")
-        st.markdown("""
-        When deploying to **Streamlit Cloud**:
-        1. Open your app dashboard on [share.streamlit.io](https://share.streamlit.io/).
-        2. Go to **Settings** &rarr; **Secrets**.
-        3. Add your key in TOML format:
-        ```toml
-        GEMINI_API_KEY = "AIzaSyYourKeyHere"
-        ```
-        4. Save and the AI Assistant activates automatically!
-        """)
-
-    st.markdown("---")
-    st.info("💡 **Quick Test**: Paste your key in the sidebar under **'Configure / Override API Key'** to start chatting right away without editing files.")
-    st.stop()
+        st.caption("Get a free key at [Google AI Studio](https://aistudio.google.com/app/apikey). You can also configure it in `.streamlit/secrets.toml`.")
 
 
 # ── Welcome Banner with Personalized Context ──────────────────────────────────
-greeting_name = f", **{student_name}**" if student_name else ""
+greeting_name = f", <strong>{student_name}</strong>" if student_name else ""
+mode_tag = "🟢 <strong>Live Cloud AI Active</strong>" if creds["is_configured"] else "⚡ <strong>Built-in Local Career AI Active</strong> (Zero API Key Required)"
+
 st.markdown(f"""
 <div class="glass-card" style="padding:1rem 1.4rem; margin-bottom:1.2rem; border-left:3px solid #00F5D4;">
-    <p style="color:#FFFFFF !important; margin:0; font-size:1.05rem;">
-        👋 Hello{greeting_name}! I am your <b>SkillMatch AI Career Mentor</b>.
-    </p>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <p style="color:#FFFFFF !important; margin:0; font-size:1.05rem;">
+            👋 Hello{greeting_name}! I am your <b>SkillMatch AI Career Mentor</b>.
+        </p>
+        <span style="font-size:0.8rem; color:#00D4FF;">{mode_tag}</span>
+    </div>
     <p style="color:#7B8FA3 !important; margin:0.3rem 0 0 0; font-size:0.88rem;">
         Ask me about recommended career paths, skill gaps, learning roadmaps, programming doubts, interview preparation, or portfolio projects!
     </p>
@@ -189,7 +154,7 @@ if prompt_to_process:
     # 2. Add to session history
     st.session_state.chat_messages.append({"role": "user", "content": prompt_to_process})
 
-    # 3. Generate AI response
+    # 3. Generate AI response (handles both Cloud & Local fallback seamlessly)
     with chat_container:
         with st.chat_message("assistant", avatar="🤖"):
             with st.spinner("SkillMatch AI is thinking..."):
@@ -204,8 +169,4 @@ if prompt_to_process:
                     st.session_state.chat_messages.append({"role": "assistant", "content": response_text})
 
                 except Exception as e:
-                    err_msg = str(e)
-                    if "NO_API_KEY" in err_msg:
-                        st.error("⚠️ AI API key is not configured. Please add GEMINI_API_KEY to secrets or the sidebar.")
-                    else:
-                        st.error(f"⚠️ Error from AI service: {err_msg}")
+                    st.error(f"⚠️ Error generating response: {e}")
